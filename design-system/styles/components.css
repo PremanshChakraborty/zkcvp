@@ -1,0 +1,1053 @@
+/* =============================================================================
+   ZKCVP Design System — Components
+   Generic, domain-agnostic UI. Domain-aware pieces live in domain.css.
+   Depends on tokens.css + base.css.
+   ============================================================================= */
+
+/* =============================================================================
+   Button
+   ============================================================================= */
+.ds-btn {
+  --_bg: transparent;
+  --_fg: var(--ds-color-text);
+  --_border: var(--ds-color-border-strong);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-2);
+  height: var(--ds-control-md);
+  padding-inline: var(--ds-space-3);
+  border: 1px solid var(--_border);
+  border-radius: var(--ds-radius-md);
+  background: var(--_bg);
+  color: var(--_fg);
+  font-size: var(--ds-text-300);
+  font-weight: var(--ds-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+    border-color var(--ds-duration-fast) var(--ds-ease-standard),
+    color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+/* 0.55, not 0.45. WCAG 1.4.3 exempts inactive controls, but at 0.45 the disabled
+   primary button measured 2.44:1 — legible enough to look like a button, not
+   enough to read the word on it. This keeps it unmistakably disabled at ~3.3:1. */
+.ds-btn:disabled,
+.ds-btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* --- variants --- */
+.ds-btn--primary {
+  --_bg: var(--ds-color-accent-solid);
+  --_fg: var(--ds-color-on-accent);
+  --_border: var(--ds-color-accent-solid);
+}
+.ds-btn--primary:hover:not(:disabled) {
+  --_bg: var(--ds-color-accent-solid-hover);
+  --_border: var(--ds-color-accent-solid-hover);
+}
+.ds-btn--primary:active:not(:disabled) {
+  --_bg: var(--ds-color-accent-solid-active);
+}
+
+.ds-btn--secondary {
+  --_bg: var(--ds-color-surface-raised);
+  --_fg: var(--ds-color-text);
+  --_border: var(--ds-color-border-strong);
+}
+.ds-btn--secondary:hover:not(:disabled) {
+  --_bg: var(--ds-color-surface-hover);
+}
+
+.ds-btn--ghost {
+  --_bg: transparent;
+  --_fg: var(--ds-color-text-secondary);
+  --_border: transparent;
+}
+.ds-btn--ghost:hover:not(:disabled) {
+  --_bg: var(--ds-color-surface-hover);
+  --_fg: var(--ds-color-text);
+}
+
+.ds-btn--danger {
+  --_bg: var(--ds-color-danger-solid);
+  --_fg: var(--ds-color-on-danger);
+  --_border: var(--ds-color-danger-solid);
+}
+.ds-btn--danger:hover:not(:disabled) {
+  --_bg: var(--ds-color-danger-solid-hover);
+  --_border: var(--ds-color-danger-solid-hover);
+}
+
+/* Destructive but reversible (e.g. archive) — outlined, not filled. Reserve the
+   filled danger button for the genuinely irreversible. */
+.ds-btn--danger-outline {
+  --_bg: transparent;
+  --_fg: var(--ds-color-danger);
+  --_border: var(--ds-color-danger-border);
+}
+.ds-btn--danger-outline:hover:not(:disabled) {
+  --_bg: var(--ds-color-danger-subtle);
+}
+
+/* --- sizes --- */
+.ds-btn--sm {
+  height: var(--ds-control-sm);
+  padding-inline: var(--ds-space-2);
+  font-size: var(--ds-text-200);
+  gap: var(--ds-space-1);
+}
+.ds-btn--lg {
+  height: var(--ds-control-lg);
+  padding-inline: var(--ds-space-4);
+  font-size: var(--ds-text-400);
+}
+
+.ds-btn--block {
+  display: flex;
+  width: 100%;
+}
+
+/* Loading — content stays in the flow to hold the width, spinner overlays.
+   `color: transparent` needs no `!important`: this rule is declared after
+   `.ds-btn` at equal specificity, so source order already wins. */
+.ds-btn--loading {
+  position: relative;
+  color: transparent;
+  pointer-events: none;
+}
+.ds-btn--loading::after {
+  content: "";
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  border-top-color: transparent;
+  color: var(--_fg);
+  animation: ds-spin 620ms linear infinite;
+}
+
+@keyframes ds-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Icon-only */
+.ds-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ds-control-md);
+  height: var(--ds-control-md);
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-md);
+  background: transparent;
+  color: var(--ds-color-text-muted);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+    color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.ds-icon-btn:hover:not(:disabled) {
+  background: var(--ds-color-surface-hover);
+  color: var(--ds-color-text);
+}
+.ds-icon-btn--sm {
+  width: var(--ds-control-sm);
+  height: var(--ds-control-sm);
+}
+.ds-icon-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* =============================================================================
+   Form controls
+   ============================================================================= */
+.ds-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+}
+
+.ds-label {
+  font-size: var(--ds-text-200);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-color-text-secondary);
+}
+
+.ds-label__required {
+  color: var(--ds-color-danger);
+  margin-left: var(--ds-space-1);
+}
+
+.ds-hint {
+  font-size: var(--ds-text-200);
+  line-height: var(--ds-text-200-lh);
+  color: var(--ds-color-text-muted);
+}
+
+.ds-error-text {
+  font-size: var(--ds-text-200);
+  line-height: var(--ds-text-200-lh);
+  color: var(--ds-color-danger);
+}
+
+.ds-input,
+.ds-textarea,
+.ds-select {
+  width: 100%;
+  background: var(--ds-color-surface-inset);
+  border: 1px solid var(--ds-color-border-strong);
+  border-radius: var(--ds-radius-md);
+  color: var(--ds-color-text);
+  font-size: var(--ds-text-300);
+  transition: border-color var(--ds-duration-fast) var(--ds-ease-standard),
+    background var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.ds-input,
+.ds-select {
+  height: var(--ds-control-md);
+  padding-inline: var(--ds-space-2);
+}
+
+.ds-textarea {
+  min-height: 88px;
+  padding: var(--ds-space-2);
+  line-height: var(--ds-text-400-lh);
+  resize: vertical;
+}
+
+/* text-muted, not text-faint: placeholders are held to the same 4.5:1 as body
+   text, and against the inset field background the faint tone measured 2.79:1. */
+.ds-input::placeholder,
+.ds-textarea::placeholder {
+  color: var(--ds-color-text-muted);
+}
+
+.ds-input:hover:not(:disabled),
+.ds-textarea:hover:not(:disabled),
+.ds-select:hover:not(:disabled) {
+  border-color: var(--ds-color-text-faint);
+}
+
+.ds-input:disabled,
+.ds-textarea:disabled,
+.ds-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ds-input--invalid,
+.ds-textarea--invalid,
+.ds-select--invalid {
+  border-color: var(--ds-color-danger-border);
+  background: var(--ds-color-danger-subtle);
+}
+
+/* Monospace input — for commit SHAs, repo names, hashes. */
+.ds-input--mono {
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-200);
+}
+
+.ds-select {
+  appearance: none;
+  padding-right: var(--ds-space-5);
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right var(--ds-space-3) center, right var(--ds-space-2) center;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+/* Checkbox — the requirement checklist depends on this reading crisply at rest. */
+.ds-checkbox {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--ds-space-2);
+  cursor: pointer;
+}
+
+.ds-checkbox__control {
+  flex: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  margin: 2px 0 0;
+  border: 1px solid var(--ds-color-border-strong);
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-color-surface-inset);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+    border-color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.ds-checkbox__control:checked {
+  background: var(--ds-color-accent-solid);
+  border-color: var(--ds-color-accent-solid);
+  background-image: var(--ds-icon-check);
+  background-size: 11px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.ds-checkbox__control:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ds-checkbox__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+}
+
+.ds-checkbox__label {
+  font-size: var(--ds-text-300);
+  color: var(--ds-color-text);
+}
+
+/* =============================================================================
+   Badge
+   ============================================================================= */
+.ds-badge {
+  --_tone: var(--ds-color-neutral);
+  --_tone-subtle: var(--ds-color-neutral-subtle);
+  --_tone-border: var(--ds-color-neutral-border);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  height: 20px;
+  padding-inline: var(--ds-space-2);
+  border: 1px solid var(--_tone-border);
+  border-radius: var(--ds-radius-full);
+  background: var(--_tone-subtle);
+  color: var(--_tone);
+  font-size: var(--ds-text-100);
+  font-weight: var(--ds-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ds-badge--accent {
+  --_tone: var(--ds-color-accent);
+  --_tone-subtle: var(--ds-color-accent-subtle);
+  --_tone-border: var(--ds-color-accent-border);
+}
+.ds-badge--success {
+  --_tone: var(--ds-color-success);
+  --_tone-subtle: var(--ds-color-success-subtle);
+  --_tone-border: var(--ds-color-success-border);
+}
+.ds-badge--danger {
+  --_tone: var(--ds-color-danger);
+  --_tone-subtle: var(--ds-color-danger-subtle);
+  --_tone-border: var(--ds-color-danger-border);
+}
+.ds-badge--warning {
+  --_tone: var(--ds-color-warning);
+  --_tone-subtle: var(--ds-color-warning-subtle);
+  --_tone-border: var(--ds-color-warning-border);
+}
+
+/* Square variant — for counts and version pills, where a pill reads too soft. */
+.ds-badge--square {
+  border-radius: var(--ds-radius-sm);
+}
+
+.ds-badge--mono {
+  font-family: var(--ds-font-mono);
+  letter-spacing: 0;
+}
+
+/* Status dot, usable standalone or inside a badge. */
+.ds-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* =============================================================================
+   Card / Panel
+   ============================================================================= */
+.ds-card {
+  background: var(--ds-color-surface);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-lg);
+  overflow: hidden;
+}
+
+.ds-card--raised {
+  background: var(--ds-color-surface-raised);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.ds-card--interactive {
+  cursor: pointer;
+  transition: border-color var(--ds-duration-fast) var(--ds-ease-standard),
+    background var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.ds-card--interactive:hover {
+  border-color: var(--ds-color-border-strong);
+  background: var(--ds-color-surface-raised);
+}
+
+.ds-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-color-border);
+}
+
+.ds-card__title {
+  font-size: var(--ds-text-300);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-color-text);
+}
+
+.ds-card__body {
+  padding: var(--ds-space-4);
+}
+
+.ds-card__body--flush {
+  padding: 0;
+}
+
+.ds-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border-top: 1px solid var(--ds-color-border);
+  background: var(--ds-color-surface-inset);
+}
+
+/* Inset well — recessed, for content that is *evidence* rather than chrome. */
+.ds-well {
+  background: var(--ds-color-surface-inset);
+  border: 1px solid var(--ds-color-border-inset);
+  border-radius: var(--ds-radius-md);
+  padding: var(--ds-space-3);
+}
+
+/* =============================================================================
+   Page header
+   ============================================================================= */
+.ds-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-3);
+  padding-block: var(--ds-space-5) var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-color-border);
+}
+
+.ds-page-header__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+}
+
+.ds-page-header__heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+  min-width: 0;
+}
+
+.ds-page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  flex: none;
+}
+
+/* =============================================================================
+   Table
+   Always wrapped in `.ds-scroll-x` (base.css) — Table.tsx does this for you.
+   Commit tables carry nowrap SHAs and repo names and will exceed a phone's
+   width however the columns are tuned; that overflow belongs to the table's own
+   container, never to the page body.
+   ============================================================================= */
+.ds-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ds-text-300);
+}
+
+.ds-table th {
+  padding: var(--ds-space-2) var(--ds-space-4);
+  text-align: left;
+  font-size: var(--ds-text-100);
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: var(--ds-tracking-wide);
+  text-transform: uppercase;
+  color: var(--ds-color-text-muted);
+  background: var(--ds-color-surface-inset);
+  border-bottom: 1px solid var(--ds-color-border);
+  white-space: nowrap;
+}
+
+.ds-table td {
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-color-border);
+  color: var(--ds-color-text-secondary);
+  vertical-align: middle;
+}
+
+.ds-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.ds-table tbody tr:hover td {
+  background: var(--ds-color-surface-hover);
+}
+
+.ds-table--dense th {
+  padding-block: var(--ds-space-2);
+}
+.ds-table--dense td {
+  padding-block: var(--ds-space-2);
+}
+
+.ds-table__cell--strong {
+  color: var(--ds-color-text);
+  font-weight: var(--ds-weight-medium);
+}
+
+.ds-table__cell--mono {
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-200);
+}
+
+.ds-table__cell--right {
+  text-align: right;
+}
+
+.ds-table__cell--shrink {
+  width: 1%;
+  white-space: nowrap;
+}
+
+/* =============================================================================
+   Description list — evaluation metadata (modelId, promptTemplateVersion, …)
+   ============================================================================= */
+.ds-dl {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 1fr;
+  gap: var(--ds-space-2) var(--ds-space-4);
+  font-size: var(--ds-text-200);
+}
+
+.ds-dl__key {
+  color: var(--ds-color-text-muted);
+}
+
+.ds-dl__value {
+  color: var(--ds-color-text);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Stacked. Margins rather than `gap`: a single-column grid cannot express both a
+   tight key-to-value step and a generous pair-to-pair one through gap alone, and
+   an even 12px everywhere destroys the pairing the list exists to show.
+   responsive.css applies this same treatment to `.ds-dl` under 640px — keep the
+   two in sync. */
+.ds-dl--stacked {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+.ds-dl--stacked .ds-dl__key {
+  margin-top: var(--ds-space-3);
+}
+.ds-dl--stacked .ds-dl__key:first-child {
+  margin-top: 0;
+}
+.ds-dl--stacked .ds-dl__value {
+  margin-top: var(--ds-space-1);
+}
+
+/* =============================================================================
+   Empty state
+   ============================================================================= */
+.ds-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-7) var(--ds-space-5);
+  text-align: center;
+  border: 1px dashed var(--ds-color-border-strong);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-color-surface-inset);
+}
+
+.ds-empty__title {
+  font-size: var(--ds-text-400);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-color-text);
+}
+
+.ds-empty__body {
+  font-size: var(--ds-text-300);
+  color: var(--ds-color-text-muted);
+  max-width: 44ch;
+}
+
+.ds-empty__actions {
+  margin-top: var(--ds-space-2);
+  display: flex;
+  gap: var(--ds-space-2);
+}
+
+/* =============================================================================
+   Skeleton
+   ============================================================================= */
+.ds-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--ds-color-surface-raised) 25%,
+    var(--ds-color-surface-hover) 50%,
+    var(--ds-color-surface-raised) 75%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--ds-radius-sm);
+  animation: ds-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes ds-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Reduced-motion policy, applied consistently across every looping animation:
+   decorative loops stop outright, but a *progress* indicator only slows down.
+   Freezing a spinner or an indeterminate bar makes a request that is genuinely
+   still running look hung, which misinforms the user rather than accommodating
+   them — and during a synchronous evaluation the developer has nothing else to
+   go on. Anything purely ornamental gets `animation: none`. */
+@media (prefers-reduced-motion: reduce) {
+  .ds-skeleton {
+    animation: none;
+  }
+  .ds-btn--loading::after,
+  .ds-spinner {
+    animation-duration: 1.6s;
+  }
+  .ds-progress__bar {
+    animation-duration: 3s;
+  }
+}
+
+/* =============================================================================
+   Avatar
+   ============================================================================= */
+.ds-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: var(--ds-radius-full);
+  border: 1px solid var(--ds-color-border);
+  background: var(--ds-color-surface-raised);
+  color: var(--ds-color-text-secondary);
+  font-size: var(--ds-text-100);
+  font-weight: var(--ds-weight-semibold);
+  overflow: hidden;
+  object-fit: cover;
+}
+
+.ds-avatar--lg {
+  width: 30px;
+  height: 30px;
+  font-size: var(--ds-text-200);
+}
+
+/* =============================================================================
+   Alert / callout
+   ============================================================================= */
+.ds-alert {
+  --_tone: var(--ds-color-accent);
+  --_tone-subtle: var(--ds-color-accent-subtle);
+  --_tone-border: var(--ds-color-accent-border);
+
+  display: flex;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border: 1px solid var(--_tone-border);
+  border-radius: var(--ds-radius-md);
+  background: var(--_tone-subtle);
+}
+
+.ds-alert--success {
+  --_tone: var(--ds-color-success);
+  --_tone-subtle: var(--ds-color-success-subtle);
+  --_tone-border: var(--ds-color-success-border);
+}
+.ds-alert--danger {
+  --_tone: var(--ds-color-danger);
+  --_tone-subtle: var(--ds-color-danger-subtle);
+  --_tone-border: var(--ds-color-danger-border);
+}
+.ds-alert--warning {
+  --_tone: var(--ds-color-warning);
+  --_tone-subtle: var(--ds-color-warning-subtle);
+  --_tone-border: var(--ds-color-warning-border);
+}
+.ds-alert--neutral {
+  --_tone: var(--ds-color-neutral);
+  --_tone-subtle: var(--ds-color-neutral-subtle);
+  --_tone-border: var(--ds-color-neutral-border);
+}
+
+.ds-alert__icon {
+  flex: none;
+  color: var(--_tone);
+  margin-top: 1px;
+}
+
+.ds-alert__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+  min-width: 0;
+}
+
+.ds-alert__title {
+  font-size: var(--ds-text-300);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-color-text);
+}
+
+.ds-alert__body {
+  font-size: var(--ds-text-300);
+  line-height: var(--ds-text-300-lh);
+  color: var(--ds-color-text-secondary);
+}
+
+/* =============================================================================
+   Spinner & progress
+   ============================================================================= */
+.ds-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--ds-color-border-strong);
+  border-top-color: var(--ds-color-accent);
+  border-radius: 50%;
+  animation: ds-spin 620ms linear infinite;
+}
+
+.ds-spinner--sm {
+  width: 11px;
+  height: 11px;
+  border-width: 1.25px;
+}
+.ds-spinner--lg {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+
+/* Indeterminate bar — for the synchronous evaluation wait, where no honest
+   percentage exists. Never fake a determinate percentage here. */
+.ds-progress {
+  position: relative;
+  height: 2px;
+  width: 100%;
+  background: var(--ds-color-border);
+  border-radius: var(--ds-radius-full);
+  overflow: hidden;
+}
+
+/* Travels on `transform`, not `left`: animating `left` relayouts the bar every
+   frame for the entire duration of a wait that already blocks the developer's
+   request, which is exactly when the main thread can least afford it. The
+   percentages are relative to the bar's own 34% width, so -100% parks it fully
+   off the left edge and 294% (100/34) carries it fully past the right. */
+.ds-progress__bar {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 34%;
+  background: var(--ds-color-accent);
+  border-radius: inherit;
+  will-change: transform;
+  animation: ds-indeterminate 1.5s var(--ds-ease-standard) infinite;
+}
+
+@keyframes ds-indeterminate {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(294%);
+  }
+}
+
+/* =============================================================================
+   Toast
+   ============================================================================= */
+.ds-toast-region {
+  position: fixed;
+  bottom: var(--ds-space-5);
+  right: var(--ds-space-5);
+  z-index: var(--ds-z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  max-width: min(400px, calc(100vw - var(--ds-space-6)));
+}
+
+.ds-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  background: var(--ds-color-surface-raised);
+  border: 1px solid var(--ds-color-border-strong);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-lg);
+  font-size: var(--ds-text-300);
+  color: var(--ds-color-text);
+}
+
+.ds-toast__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ds-toast__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  flex: none;
+}
+
+/* Countdown ring for the 60s repo-removal undo window. Drives from the
+   --ds-undo-progress custom property (1 → 0) set by the component. */
+.ds-countdown {
+  --ds-undo-progress: 1;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--ds-color-accent) calc(var(--ds-undo-progress) * 360deg),
+    var(--ds-color-border) 0
+  );
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  font-family: var(--ds-font-mono);
+  color: var(--ds-color-text-muted);
+}
+
+.ds-countdown::after {
+  content: "";
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--ds-color-surface-raised);
+}
+
+/* =============================================================================
+   Tabs
+   ============================================================================= */
+/* Scrolls rather than wraps. A wrapped second row of tabs detaches from the
+   bottom border that anchors the active indicator, so the "where am I" signal
+   stops meaning anything. The scrollbar is hidden because the tab strip is only
+   ever a few items and a visible bar under a 2px indicator reads as noise —
+   overflow stays reachable by swipe, trackpad, and keyboard focus. */
+.ds-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-1);
+  border-bottom: 1px solid var(--ds-color-border);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.ds-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.ds-tab {
+  flex: none;
+}
+
+.ds-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-2) var(--ds-space-3);
+  border: 0;
+  background: none;
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-text-300);
+  font-weight: var(--ds-weight-medium);
+  cursor: pointer;
+  transition: color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+/* 2px, not 1px: this is the primary "where am I" signal and a 1px rule sitting
+   directly on the container's own 1px border is nearly indistinguishable. */
+.ds-tab::after {
+  content: "";
+  position: absolute;
+  left: var(--ds-space-2);
+  right: var(--ds-space-2);
+  bottom: -1px;
+  height: 2px;
+  border-radius: var(--ds-radius-full);
+  background: transparent;
+}
+
+.ds-tab:hover {
+  color: var(--ds-color-text);
+}
+
+.ds-tab[aria-selected="true"] {
+  color: var(--ds-color-text);
+}
+.ds-tab[aria-selected="true"]::after {
+  background: var(--ds-color-accent);
+}
+
+.ds-tab__count {
+  font-size: var(--ds-text-100);
+  font-family: var(--ds-font-mono);
+  color: var(--ds-color-text-muted);
+}
+
+/* =============================================================================
+   Breadcrumb
+   ============================================================================= */
+.ds-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  font-size: var(--ds-text-200);
+  color: var(--ds-color-text-muted);
+  min-width: 0;
+}
+
+.ds-breadcrumb__item {
+  color: var(--ds-color-text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ds-breadcrumb__item:hover {
+  color: var(--ds-color-text);
+}
+
+.ds-breadcrumb__item[aria-current="page"] {
+  color: var(--ds-color-text);
+}
+
+.ds-breadcrumb__sep {
+  color: var(--ds-color-text-muted);
+  flex: none;
+}
+
+/* =============================================================================
+   Side navigation
+   ============================================================================= */
+.ds-sidenav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+  width: var(--ds-sidenav-width);
+  padding: var(--ds-space-3);
+}
+
+.ds-sidenav__section {
+  padding: var(--ds-space-3) var(--ds-space-2) var(--ds-space-1);
+}
+
+.ds-nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-2) var(--ds-space-2);
+  border-radius: var(--ds-radius-md);
+  color: var(--ds-color-text-secondary);
+  font-size: var(--ds-text-300);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+    color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.ds-nav-item:hover {
+  background: var(--ds-color-surface-hover);
+  color: var(--ds-color-text);
+}
+
+.ds-nav-item[aria-current="page"] {
+  background: var(--ds-color-accent-subtle);
+  color: var(--ds-color-text);
+  font-weight: var(--ds-weight-medium);
+}
+
+.ds-nav-item__icon {
+  flex: none;
+  color: var(--ds-color-text-muted);
+}
+
+.ds-nav-item[aria-current="page"] .ds-nav-item__icon {
+  color: var(--ds-color-accent);
+}
+
+.ds-nav-item__trailing {
+  margin-left: auto;
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-100);
+  color: var(--ds-color-text-muted);
+}
+
+/* =============================================================================
+   Keyboard key
+   ============================================================================= */
+.ds-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding-inline: var(--ds-space-1);
+  border: 1px solid var(--ds-color-border-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-color-surface-raised);
+  color: var(--ds-color-text-secondary);
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-100);
+  line-height: 1;
+}

@@ -1,0 +1,355 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Foundations · ZKCVP</title>
+    <link rel="stylesheet" href="../styles/design-system.css" />
+    <link rel="stylesheet" href="./preview.css" />
+  </head>
+  <body>
+    <div class="pv-page">
+      <header class="pv-head">
+        <div>
+          <div class="pv-head__title">Foundations</div>
+          <p class="pv-head__sub">
+            Colour, type, space and motion. Every value is a CSS custom property in
+            <code>styles/tokens.css</code> — nothing downstream contains a raw hex.
+          </p>
+        </div>
+        <div class="pv-theme">
+          <button data-mode="dark">Dark</button>
+          <button data-mode="light">Light</button>
+          <button data-mode="system">System</button>
+        </div>
+      </header>
+
+      <!-- ================================================================= -->
+      <section class="pv-section">
+        <h2 class="pv-section__title">Surfaces</h2>
+        <p class="pv-note">
+          A five-step ramp. <strong>Inset is darker than the canvas</strong>, not lighter:
+          evidence (commit lists, digests, log refs) reads as a well cut into the page,
+          while chrome sits above it on cards. That inversion is the core of the look.
+        </p>
+        <div class="pv-grid">
+          <div class="pv-swatch">
+            <div class="pv-swatch__chip" style="background: var(--ds-color-canvas)"></div>
+            <div class="pv-swatch__meta">
+              <div class="pv-swatch__name">--ds-color-canvas</div>
+              <div class="pv-swatch__role">Page background</div>
+            </div>
+          </div>
+          <div class="pv-swatch">
+            <div class="pv-swatch__chip" style="background: var(--ds-color-surface)"></div>
+            <div class="pv-swatch__meta">
+              <div class="pv-swatch__name">--ds-color-surface</div>
+              <div class="pv-swatch__role">Cards, panels</div>
+            </div>
+          </div>
+          <div class="pv-swatch">
+            <div class="pv-swatch__chip" style="background: var(--ds-color-surface-raised)"></div>
+            <div class="pv-swatch__meta">
+              <div class="pv-swatch__name">--ds-color-surface-raised</div>
+              <div class="pv-swatch__role">Menus, toasts, secondary buttons</div>
+            </div>
+          </div>
+          <div class="pv-swatch">
+            <div class="pv-swatch__chip" style="background: var(--ds-color-surface-hover)"></div>
+            <div class="pv-swatch__meta">
+              <div class="pv-swatch__name">--ds-color-surface-hover</div>
+              <div class="pv-swatch__role">Row and control hover</div>
+            </div>
+          </div>
+          <div class="pv-swatch">
+            <div class="pv-swatch__chip" style="background: var(--ds-color-surface-inset)"></div>
+            <div class="pv-swatch__meta">
+              <div class="pv-swatch__name">--ds-color-surface-inset</div>
+              <div class="pv-swatch__role">Wells, inputs, identifiers</div>
+            </div>
+          </div>
+          <div class="pv-swatch">
+            <div class="pv-swatch__chip" style="background: var(--ds-color-border)"></div>
+            <div class="pv-swatch__meta">
+              <div class="pv-swatch__name">--ds-color-border</div>
+              <div class="pv-swatch__role">Hairline · carries all structure</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <section class="pv-section">
+        <h2 class="pv-section__title">Accent</h2>
+        <p class="pv-note">
+          Signal amber, used <strong>only for interactive affordances</strong>: primary
+          actions, links, focus, active nav. Deliberately outside the verdict family so it can
+          never be misread as a result. Two values, because one cannot do both jobs
+          accessibly: <code>accent</code> for text on dark (≈10.5:1), <code>accent-solid</code>
+          for fills. Note that fills carry <strong>near-black</strong> text, not white
+          (<code>--ds-color-on-accent</code>, ≈9:1), because amber is a light fill and white on it
+          fails at any size.
+        </p>
+        <div class="pv-grid">
+          <div class="pv-swatch">
+            <div class="pv-swatch__chip" style="background: var(--ds-color-accent)"></div>
+            <div class="pv-swatch__meta">
+              <div class="pv-swatch__name">--ds-color-accent</div>
+              <div class="pv-swatch__role">Text, icons, links</div>
+            </div>
+          </div>
+          <div class="pv-swatch">
+            <div class="pv-swatch__chip" style="background: var(--ds-color-accent-solid)"></div>
+            <div class="pv-swatch__meta">
+              <div class="pv-swatch__name">--ds-color-accent-solid</div>
+              <div class="pv-swatch__role">Filled backgrounds</div>
+            </div>
+          </div>
+          <div class="pv-swatch">
+            <div class="pv-swatch__chip" style="background: var(--ds-color-accent-subtle)"></div>
+            <div class="pv-swatch__meta">
+              <div class="pv-swatch__name">--ds-color-accent-subtle</div>
+              <div class="pv-swatch__role">Selected rows, active nav</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <section class="pv-section">
+        <h2 class="pv-section__title">Status</h2>
+        <p class="pv-note">
+          Four tones, each bound to one meaning. The subtle one is the middle pair:
+          <strong>a negative verdict and a system failure are different events and never
+          share a hue.</strong> A rate limit or a blown execution ceiling says nothing about
+          whether the code satisfies a requirement, so it gets coral, while a genuine
+          "not satisfied" gets periwinkle. Neutral, not amber, marks <code>new</code>:
+          "not yet assessed" is an absence of information, not a caution.
+        </p>
+        <div class="pv-grid">
+          <div class="pv-swatch">
+            <div class="pv-swatch__chip" style="background: var(--ds-color-success)"></div>
+            <div class="pv-swatch__meta">
+              <div class="pv-swatch__name">--ds-color-success</div>
+              <div class="pv-swatch__role">status verified · verdict satisfied</div>
+            </div>
+          </div>
+          <div class="pv-swatch">
+            <div class="pv-swatch__chip" style="background: var(--ds-color-verdict-failed)"></div>
+            <div class="pv-swatch__meta">
+              <div class="pv-swatch__name">--ds-color-verdict-failed</div>
+              <div class="pv-swatch__role">status eval_failed · verdict not_satisfied</div>
+            </div>
+          </div>
+          <div class="pv-swatch">
+            <div class="pv-swatch__chip" style="background: var(--ds-color-danger)"></div>
+            <div class="pv-swatch__meta">
+              <div class="pv-swatch__name">--ds-color-danger</div>
+              <div class="pv-swatch__role">True errors &amp; destructive actions · never a verdict</div>
+            </div>
+          </div>
+          <div class="pv-swatch">
+            <div class="pv-swatch__chip" style="background: var(--ds-color-neutral)"></div>
+            <div class="pv-swatch__meta">
+              <div class="pv-swatch__name">--ds-color-neutral</div>
+              <div class="pv-swatch__role">status new · never evaluated</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <section class="pv-section">
+        <h2 class="pv-section__title">Role identity</h2>
+        <p class="pv-note">
+          Two hues kept clear of both the amber accent and every verdict colour.
+          <strong>Who someone is must never be confused with what an evaluation
+          concluded.</strong>
+        </p>
+        <div class="pv-grid">
+          <div class="pv-swatch">
+            <div class="pv-swatch__chip" style="background: var(--ds-color-role-stakeholder)"></div>
+            <div class="pv-swatch__meta">
+              <div class="pv-swatch__name">--ds-color-role-stakeholder</div>
+              <div class="pv-swatch__role">Defines requirements, reads reports</div>
+            </div>
+          </div>
+          <div class="pv-swatch">
+            <div class="pv-swatch__chip" style="background: var(--ds-color-role-developer)"></div>
+            <div class="pv-swatch__meta">
+              <div class="pv-swatch__name">--ds-color-role-developer</div>
+              <div class="pv-swatch__role">Attaches repos, submits claims</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <section class="pv-section">
+        <h2 class="pv-section__title">Typography</h2>
+        <p class="pv-note">
+          A numeric scale, so "is 400 larger than 300" is never a question.
+          <strong>300 is the default UI size; 400 is the reading size</strong> and is used only
+          where there are real sentences: evaluator rationales and requirement descriptions.
+          Monospace is not decorative here: it marks every value a person might paste into a
+          terminal.
+        </p>
+
+        <div class="pv-specimen">
+          <div class="pv-specimen__label">--ds-text-700 · 26/34 · semibold</div>
+          <div class="ds-display">Requirement verification</div>
+        </div>
+        <div class="pv-specimen">
+          <div class="pv-specimen__label">--ds-text-600 · 20/28 · semibold · page titles</div>
+          <div class="ds-title">Rate limiting on /api/claims</div>
+        </div>
+        <div class="pv-specimen">
+          <div class="pv-specimen__label">--ds-text-500 · 16/24 · semibold · section headings</div>
+          <div class="ds-heading">Claimed commits</div>
+        </div>
+        <div class="pv-specimen">
+          <div class="pv-specimen__label">--ds-text-400 · 14/22 · prose, rationales</div>
+          <p class="ds-prose">
+            The token bucket limiter is applied to the claim submission route and covers both
+            the per-developer and per-project ceilings described in the requirement. The
+            refill interval is configured at the value the requirement specifies.
+          </p>
+        </div>
+        <div class="pv-specimen">
+          <div class="pv-specimen__label">--ds-text-300 · 13/20 · default UI text</div>
+          <div class="ds-body">Six requirements, four verified, one not satisfied.</div>
+        </div>
+        <div class="pv-specimen">
+          <div class="pv-specimen__label">--ds-text-200 · 12/18 · secondary, metadata</div>
+          <div class="ds-caption">Recorded 24 July 2026 at 14:02 UTC</div>
+        </div>
+        <div class="pv-specimen">
+          <div class="pv-specimen__label">--ds-text-100 · 11/16 · uppercase · wide · group labels, table headers</div>
+          <div class="ds-micro-label">Evidence bundle</div>
+        </div>
+        <div class="pv-specimen">
+          <div class="pv-specimen__label">--ds-font-mono · identifiers</div>
+          <div class="pv-row">
+            <span class="ds-ident ds-sha">a3f9c21</span>
+            <span class="ds-ident"><span class="ds-sha__prefix">sha256:</span>9f2a41d0…f3c40b</span>
+            <span class="ds-repo"
+              ><span class="ds-repo__owner">premansh</span><span class="ds-repo__sep">/</span
+              ><span class="ds-repo__name">zkcvp-api</span></span
+            >
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <section class="pv-section">
+        <h2 class="pv-section__title">Space &amp; radius</h2>
+        <p class="pv-note">
+          A 4px base, eight rungs. Radii stay sharp: nothing exceeds 8px except full pills.
+        </p>
+
+        <div class="pv-specimen">
+          <div class="pv-specimen__label">space scale · 4 8 12 16 24 32 48 64</div>
+          <div class="pv-row" style="align-items: flex-end; gap: var(--ds-space-2)">
+            <div style="width: 4px; height: 4px; background: var(--ds-color-accent)"></div>
+            <div style="width: 8px; height: 8px; background: var(--ds-color-accent)"></div>
+            <div style="width: 12px; height: 12px; background: var(--ds-color-accent)"></div>
+            <div style="width: 16px; height: 16px; background: var(--ds-color-accent)"></div>
+            <div style="width: 24px; height: 24px; background: var(--ds-color-accent)"></div>
+            <div style="width: 32px; height: 32px; background: var(--ds-color-accent)"></div>
+            <div style="width: 48px; height: 48px; background: var(--ds-color-accent)"></div>
+            <div style="width: 64px; height: 64px; background: var(--ds-color-accent)"></div>
+          </div>
+        </div>
+
+        <div class="pv-specimen">
+          <div class="pv-specimen__label">
+            density contexts · row-dense 36 (commit lists, tables) · row-comfy 48 (checklist rows)
+          </div>
+          <div class="ds-stack ds-stack--tight" style="max-width: 340px">
+            <div
+              style="
+                height: var(--ds-row-dense);
+                border: 1px dashed var(--ds-color-border-strong);
+                border-radius: var(--ds-radius-md);
+              "
+            ></div>
+            <div
+              style="
+                height: var(--ds-row-comfy);
+                border: 1px dashed var(--ds-color-border-strong);
+                border-radius: var(--ds-radius-md);
+              "
+            ></div>
+          </div>
+        </div>
+
+        <div class="pv-specimen">
+          <div class="pv-specimen__label">radius · sm 3 · md 4 · lg 6 · xl 8 · full</div>
+          <div class="pv-row">
+            <div
+              style="
+                width: 56px;
+                height: 42px;
+                background: var(--ds-color-surface-raised);
+                border: 1px solid var(--ds-color-border-strong);
+                border-radius: var(--ds-radius-sm);
+              "
+            ></div>
+            <div
+              style="
+                width: 56px;
+                height: 42px;
+                background: var(--ds-color-surface-raised);
+                border: 1px solid var(--ds-color-border-strong);
+                border-radius: var(--ds-radius-md);
+              "
+            ></div>
+            <div
+              style="
+                width: 56px;
+                height: 42px;
+                background: var(--ds-color-surface-raised);
+                border: 1px solid var(--ds-color-border-strong);
+                border-radius: var(--ds-radius-lg);
+              "
+            ></div>
+            <div
+              style="
+                width: 56px;
+                height: 42px;
+                background: var(--ds-color-surface-raised);
+                border: 1px solid var(--ds-color-border-strong);
+                border-radius: var(--ds-radius-xl);
+              "
+            ></div>
+            <div
+              style="
+                width: 56px;
+                height: 42px;
+                background: var(--ds-color-surface-raised);
+                border: 1px solid var(--ds-color-border-strong);
+                border-radius: var(--ds-radius-full);
+              "
+            ></div>
+          </div>
+        </div>
+
+        <div class="pv-specimen">
+          <div class="pv-specimen__label">
+            control heights · sm 24 · md 30 · lg 36 — shared by every interactive control so
+            buttons and inputs always align
+          </div>
+          <div class="pv-row">
+            <button class="ds-btn ds-btn--secondary ds-btn--sm">Small</button>
+            <button class="ds-btn ds-btn--secondary">Medium</button>
+            <button class="ds-btn ds-btn--secondary ds-btn--lg">Large</button>
+            <input class="ds-input" style="width: 160px" value="aligns with md" readonly />
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="./_theme.js"></script>
+  </body>
+</html>

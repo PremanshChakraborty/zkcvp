@@ -1,0 +1,162 @@
+/* =============================================================================
+   Preview harness chrome — NOT part of the design system.
+
+   Everything here is namespaced `pv-` so it can never be mistaken for a shipping
+   component. Nothing in this file should be copied into the app.
+   ============================================================================= */
+
+.pv-page {
+  padding: var(--ds-space-6);
+  max-width: 1100px;
+  margin-inline: auto;
+}
+
+.pv-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+  margin-bottom: var(--ds-space-6);
+  padding-bottom: var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-color-border);
+}
+
+.pv-head__title {
+  font-size: var(--ds-text-600);
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: var(--ds-tracking-tight);
+}
+
+.pv-head__sub {
+  margin-top: var(--ds-space-1);
+  font-size: var(--ds-text-300);
+  color: var(--ds-color-text-muted);
+  max-width: 62ch;
+}
+
+.pv-theme {
+  display: flex;
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-1);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-md);
+  flex: none;
+}
+
+.pv-theme button {
+  border: 0;
+  background: transparent;
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-text-100);
+  padding: var(--ds-space-1) var(--ds-space-2);
+  border-radius: var(--ds-radius-sm);
+  cursor: pointer;
+}
+
+.pv-theme button[aria-pressed="true"] {
+  background: var(--ds-color-surface-hover);
+  color: var(--ds-color-text);
+}
+
+.pv-section {
+  margin-bottom: var(--ds-space-7);
+}
+
+.pv-section__title {
+  font-size: var(--ds-text-100);
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: var(--ds-tracking-wide);
+  text-transform: uppercase;
+  color: var(--ds-color-text-muted);
+  padding-bottom: var(--ds-space-2);
+  margin-bottom: var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-color-border);
+}
+
+.pv-note {
+  font-size: var(--ds-text-200);
+  line-height: var(--ds-text-200-lh);
+  color: var(--ds-color-text-muted);
+  max-width: 72ch;
+  margin-bottom: var(--ds-space-4);
+}
+
+.pv-note strong {
+  color: var(--ds-color-text-secondary);
+  font-weight: var(--ds-weight-medium);
+}
+
+/* A labelled specimen. */
+.pv-specimen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  margin-bottom: var(--ds-space-5);
+}
+
+.pv-specimen__label {
+  font-size: var(--ds-text-100);
+  font-family: var(--ds-font-mono);
+  color: var(--ds-color-text-muted);
+  letter-spacing: 0;
+}
+
+.pv-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ds-space-3);
+}
+
+.pv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--ds-space-3);
+}
+
+/* Colour swatch */
+.pv-swatch {
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-md);
+  overflow: hidden;
+}
+
+.pv-swatch__chip {
+  height: 52px;
+}
+
+.pv-swatch__meta {
+  padding: var(--ds-space-2);
+  border-top: 1px solid var(--ds-color-border);
+  background: var(--ds-color-surface);
+}
+
+.pv-swatch__name {
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-100);
+  color: var(--ds-color-text);
+  letter-spacing: 0;
+  word-break: break-all;
+}
+
+.pv-swatch__role {
+  margin-top: var(--ds-space-1);
+  font-size: var(--ds-text-100);
+  color: var(--ds-color-text-muted);
+}
+
+.pv-frame {
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-lg);
+  padding: var(--ds-space-4);
+  background: var(--ds-color-surface);
+}
+
+.pv-frame--flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+.pv-frame--canvas {
+  background: var(--ds-color-canvas);
+}

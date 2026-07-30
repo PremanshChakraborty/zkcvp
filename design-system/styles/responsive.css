@@ -1,0 +1,190 @@
+/* =============================================================================
+   ZKCVP Design System — Responsive & input-modality layer
+   -----------------------------------------------------------------------------
+   Loaded last so it can override the component layers.
+
+   The rest of the system is authored desktop-dense-first, because that is the
+   scene the product is actually used in: a developer picking commits with a
+   mouse and a keyboard. This file adapts that default downward rather than
+   rebuilding it mobile-first — narrower viewports and touch input are real, but
+   they are not the primary case, and pretending otherwise would cost the density
+   the dense views depend on.
+
+   Breakpoints are literal because a media query cannot read a custom property:
+
+     960px  the point where a fixed 240px side rail stops leaving a usable column
+     640px  phone territory — horizontal pairs stop fitting and must stack
+
+   Modality queries carry the rest. They are deliberately separate from width:
+   a touch laptop is wide *and* coarse, and a phone in landscape is narrow with
+   no hover. Conflating the two is what leaves affordances unreachable.
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   ≤960px — the side rail stops paying for itself
+   ----------------------------------------------------------------------------- */
+@media (max-width: 960px) {
+  /* Full width rather than a narrower rail. Placement is the app's decision —
+     a top block, a disclosure, or a drawer — and this system ships no JS to
+     open one, so it must not presume a drawer exists. */
+  .ds-sidenav {
+    width: 100%;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   ≤640px — horizontal pairs stop fitting
+   ----------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .ds-container {
+    padding-inline: var(--ds-space-4);
+  }
+
+  /* Title and actions: stack instead of competing for one line. */
+  .ds-page-header__top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ds-page-header__actions {
+    flex-wrap: wrap;
+  }
+
+  .ds-card__header,
+  .ds-verdict-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* column-reverse, so the primary action — authored last for correct desktop
+     placement and correct DOM/tab order — lands on top where a thumb reaches
+     first, without reordering the markup. */
+  .ds-card__footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .ds-verdict-card__footer,
+  .ds-evidence {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Metadata rows: wrap rather than overflow. Every one of these is a sequence
+     of independent facts, so a wrapped line loses nothing. */
+  .ds-commit__meta,
+  .ds-requirement__meta,
+  .ds-evaluating__head,
+  .ds-timeline__meta,
+  .ds-toast__actions {
+    flex-wrap: wrap;
+  }
+
+  /* A wrapping subject line makes a centred SHA float; pin it to the first line. */
+  .ds-commit {
+    align-items: flex-start;
+  }
+
+  .ds-requirement {
+    padding: var(--ds-space-3);
+  }
+
+  /* Reclaim the horizontal padding a phone cannot spare. Tables live inside
+     `.ds-scroll-x`, so this reduces how often that scroll is needed at all. */
+  .ds-table th,
+  .ds-table td {
+    padding-inline: var(--ds-space-3);
+  }
+
+  /* Single column. Mirrors `.ds-dl--stacked` in components.css — keep the two in
+     sync. Margins rather than `gap`, because a one-column grid cannot express a
+     tight key-to-value step and a generous pair-to-pair one through gap alone. */
+  .ds-dl {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .ds-dl__key {
+    margin-top: var(--ds-space-3);
+  }
+  .ds-dl__key:first-child {
+    margin-top: 0;
+  }
+  .ds-dl__value {
+    margin-top: var(--ds-space-1);
+  }
+
+  .ds-empty {
+    padding: var(--ds-space-5) var(--ds-space-4);
+  }
+
+  /* Full-bleed toast. A 400px card pinned bottom-right reads as clipped on a
+     narrow screen, and the 60-second undo it carries is too important to clip. */
+  .ds-toast-region {
+    left: var(--ds-space-4);
+    right: var(--ds-space-4);
+    bottom: var(--ds-space-4);
+    max-width: none;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Coarse pointer — thumbs, not cursors
+   ----------------------------------------------------------------------------- */
+@media (pointer: coarse) {
+  /* The dense controls sit at exactly 24px, which clears WCAG 2.5.8's floor and
+     is genuinely comfortable with a mouse. Under a thumb it is the floor and
+     nothing more, so the small rung is promoted to the medium one. */
+  .ds-btn--sm {
+    height: var(--ds-control-md);
+    padding-inline: var(--ds-space-3);
+  }
+
+  .ds-icon-btn--sm {
+    width: var(--ds-control-md);
+    height: var(--ds-control-md);
+  }
+
+  /* The copy button stays visually 16px — it sits inside an inline identifier
+     chip and growing it would break that chip's rhythm. The hit area grows
+     instead, via a transparent overlay centred on the icon. */
+  .ds-copy {
+    position: relative;
+  }
+  .ds-copy::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    width: var(--ds-control-md);
+    height: var(--ds-control-md);
+  }
+
+  /* iOS Safari zooms the viewport whenever a focused field's text is under 16px,
+     which silently breaks the layout the moment anyone types. 16px is the fix;
+     the taller control keeps it from looking cramped. */
+  .ds-input,
+  .ds-textarea,
+  .ds-select,
+  .ds-input--mono {
+    font-size: var(--ds-text-500);
+  }
+
+  .ds-input,
+  .ds-select {
+    height: var(--ds-control-lg);
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   No hover — reveal what hover was hiding
+   ----------------------------------------------------------------------------- */
+@media (hover: none) {
+  /* `.ds-copy` rests at opacity 0 and is revealed by hovering its identifier.
+     With no hover that affordance never appears, which makes copying a SHA —
+     the primary interaction on a hash — undiscoverable. Keep it visible, in the
+     faint tone so a list of identifiers still reads calmly. */
+  .ds-copy {
+    opacity: 1;
+  }
+}

@@ -1,0 +1,124 @@
+<!-- @dsCard group="Identifiers" -->
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Identifiers · ZKCVP</title>
+    <link rel="stylesheet" href="../styles/design-system.css" />
+    <link rel="stylesheet" href="./preview.css" />
+  </head>
+  <body>
+    <div class="pv-page">
+      <header class="pv-head">
+        <div>
+          <div class="pv-head__title">Identifiers</div>
+          <p class="pv-head__sub">
+            SHAs, digests, repo names, log references. These are the product's primary nouns,
+            so they share one visual language: monospace, inset, selectable, copyable.
+          </p>
+        </div>
+        <div class="pv-theme">
+          <button data-mode="dark">Dark</button>
+          <button data-mode="light">Light</button>
+          <button data-mode="system">System</button>
+        </div>
+      </header>
+
+      <section class="pv-section">
+        <h2 class="pv-section__title">Commit SHA</h2>
+        <p class="pv-note">
+          Short form on screen; the full forty characters stay in the tooltip and the copy
+          payload. Claims pin exact commits, so the full value must always be recoverable from
+          the UI without a round trip. <em>Hover to reveal copy.</em>
+        </p>
+        <div class="pv-row">
+          <span class="ds-ident ds-sha" title="a3f9c2178d40b1ee9c0f7a3b5d21e8c4f0a91b7d">
+            a3f9c21
+            <button class="ds-copy" aria-label="Copy full SHA"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="7" height="7" rx="1.5"/><path d="M9 3.4A1.4 1.4 0 007.6 2H3.4A1.4 1.4 0 002 3.4v4.2A1.4 1.4 0 003.4 9"/></svg></button>
+          </span>
+          <span class="ds-ident ds-sha" title="7b1e40d5c8a2f91b3e6d04a7c25f8b1d9e30c46a">
+            7b1e40d
+            <button class="ds-copy" aria-label="Copy full SHA"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="7" height="7" rx="1.5"/><path d="M9 3.4A1.4 1.4 0 007.6 2H3.4A1.4 1.4 0 002 3.4v4.2A1.4 1.4 0 003.4 9"/></svg></button>
+          </span>
+          <span class="ds-ident ds-ident--plain ds-sha">c40b192</span>
+        </div>
+      </section>
+
+      <section class="pv-section">
+        <h2 class="pv-section__title">Hash digest</h2>
+        <p class="pv-note">
+          <strong>Truncates in the middle, never at the end.</strong> When someone eyeballs a
+          digest against another source they compare the head <em>and</em> the tail — a
+          trailing ellipsis would destroy the only affordance that matters. This is the
+          <code>evidence_hash</code> that makes an evidence bundle checkable without disclosing
+          any of its contents.
+        </p>
+        <div class="pv-row">
+          <span class="ds-ident" title="sha256:9f2a41d0c7e83b15a6df20c94e7b8a3610fd52c9e4a7b0d381c6f9a2b5e0f3c40b">
+            <span class="ds-sha__prefix">sha256:</span>
+            <span class="ds-hash"><span class="ds-hash__head">9f2a41d0</span><span class="ds-hash__ellipsis">…</span><span class="ds-hash__tail">f3c40b</span></span>
+            <button class="ds-copy" aria-label="Copy digest"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="7" height="7" rx="1.5"/><path d="M9 3.4A1.4 1.4 0 007.6 2H3.4A1.4 1.4 0 002 3.4v4.2A1.4 1.4 0 003.4 9"/></svg></button>
+          </span>
+        </div>
+      </section>
+
+      <section class="pv-section">
+        <h2 class="pv-section__title">Repository reference</h2>
+        <p class="pv-note">
+          Display only. <code>github_repo_id</code> is the join key everywhere in the data model
+          — <code>full_name</code> changes when a repo is renamed, so nothing may be keyed off
+          what this renders.
+        </p>
+        <div class="pv-row">
+          <span class="ds-repo"><span class="ds-repo__owner">premansh</span><span class="ds-repo__sep">/</span><span class="ds-repo__name">zkcvp-api</span></span>
+          <span class="ds-repo"><span class="ds-repo__owner">premansh</span><span class="ds-repo__sep">/</span><span class="ds-repo__name">zkcvp-web</span></span>
+          <span class="ds-repo"><span class="ds-repo__owner">acme-corp</span><span class="ds-repo__sep">/</span><span class="ds-repo__name">internal-billing-service</span></span>
+        </div>
+      </section>
+
+      <section class="pv-section">
+        <h2 class="pv-section__title">File reference</h2>
+        <p class="pv-note">
+          Permitted inside an evaluator rationale; verbatim source is not. That constraint is
+          enforced at generation time in the agent — this component exists so a compliant
+          citation has somewhere correct to render, <strong>not to sanitise a
+          non-compliant one</strong>.
+        </p>
+        <p class="ds-prose">
+          The limiter is registered in <code class="ds-fileref">src/api/claims/route.ts:41-58</code>
+          and the bucket configuration it reads lives in
+          <code class="ds-fileref">src/lib/rate-limit.ts</code>.
+        </p>
+      </section>
+
+      <section class="pv-section">
+        <h2 class="pv-section__title">Transparency log reference</h2>
+        <p class="pv-note">
+          <code>unavailable</code> is the honest default for this phase — the log is not built
+          yet, so nothing has been checked. It deliberately does not render as
+          <code>unverified</code>, which would imply a check ran and came back inconclusive.
+        </p>
+        <div class="ds-stack ds-stack--tight" style="align-items: flex-start">
+          <span class="ds-logref" data-state="unavailable">
+            <span class="ds-logref__state"><span class="ds-dot"></span>Log not enabled</span>
+          </span>
+          <span class="ds-logref" data-state="unverified">
+            <span class="ds-logref__state"><span class="ds-dot"></span>Not yet checked</span>
+            <span class="ds-ident"><span class="ds-hash"><span class="ds-hash__head">24e0f1a</span><span class="ds-hash__ellipsis">…</span><span class="ds-hash__tail">b93c2</span></span></span>
+          </span>
+          <span class="ds-logref" data-state="verified">
+            <span class="ds-logref__state"><span class="ds-dot"></span>Inclusion proof valid</span>
+            <span class="ds-ident"><span class="ds-hash"><span class="ds-hash__head">24e0f1a</span><span class="ds-hash__ellipsis">…</span><span class="ds-hash__tail">b93c2</span></span></span>
+          </span>
+          <span class="ds-logref" data-state="mismatch">
+            <span class="ds-logref__state"><span class="ds-dot"></span>Proof mismatch</span>
+            <span class="ds-ident"><span class="ds-hash"><span class="ds-hash__head">24e0f1a</span><span class="ds-hash__ellipsis">…</span><span class="ds-hash__tail">b93c2</span></span></span>
+          </span>
+        </div>
+      </section>
+    </div>
+
+    <script src="./_theme.js"></script>
+  </body>
+</html>

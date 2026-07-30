@@ -1,0 +1,125 @@
+<!-- @dsCard group="Navigation" -->
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Navigation · ZKCVP</title>
+    <link rel="stylesheet" href="../styles/design-system.css" />
+    <link rel="stylesheet" href="./preview.css" />
+  </head>
+  <body>
+    <div class="pv-page">
+      <header class="pv-head">
+        <div>
+          <div class="pv-head__title">Navigation</div>
+          <p class="pv-head__sub">
+            Page headers, tabs, breadcrumbs and side navigation. Two roles share one shell —
+            what differs is which items appear, not how they look.
+          </p>
+        </div>
+        <div class="pv-theme">
+          <button data-mode="dark">Dark</button>
+          <button data-mode="light">Light</button>
+          <button data-mode="system">System</button>
+        </div>
+      </header>
+
+      <section class="pv-section">
+        <h2 class="pv-section__title">Page header</h2>
+        <div class="pv-frame">
+          <header class="ds-page-header" style="padding-top: 0">
+            <div class="ds-page-header__top">
+              <div class="ds-page-header__heading">
+                <nav class="ds-breadcrumb" aria-label="Breadcrumb">
+                  <a class="ds-breadcrumb__item" href="#">Projects</a>
+                  <span class="ds-breadcrumb__sep"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5.25 3l4 4-4 4"/></svg></span>
+                  <a class="ds-breadcrumb__item" href="#">Billing platform</a>
+                  <span class="ds-breadcrumb__sep"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5.25 3l4 4-4 4"/></svg></span>
+                  <span class="ds-breadcrumb__item" aria-current="page">Requirements</span>
+                </nav>
+                <h1 class="ds-title">Billing platform</h1>
+                <div class="ds-row ds-row--tight ds-row--wrap">
+                  <span class="ds-role" data-role="stakeholder">Stakeholder</span>
+                  <span class="ds-caption">12 requirements · 3 repositories · 4 members</span>
+                </div>
+              </div>
+              <div class="ds-page-header__actions">
+                <button class="ds-btn ds-btn--secondary">Invite developer</button>
+                <button class="ds-btn ds-btn--primary">New requirement</button>
+              </div>
+            </div>
+
+            <div class="ds-tabs">
+              <button class="ds-tab" role="tab" aria-selected="true">Requirements<span class="ds-tab__count">12</span></button>
+              <button class="ds-tab" role="tab" aria-selected="false">Claims<span class="ds-tab__count">8</span></button>
+              <button class="ds-tab" role="tab" aria-selected="false">Repositories<span class="ds-tab__count">3</span></button>
+              <button class="ds-tab" role="tab" aria-selected="false">Members<span class="ds-tab__count">4</span></button>
+            </div>
+          </header>
+        </div>
+      </section>
+
+      <section class="pv-section">
+        <h2 class="pv-section__title">Side navigation</h2>
+        <div class="pv-frame pv-frame--flush pv-frame--canvas" style="max-width: 280px">
+          <nav class="ds-sidenav" aria-label="Primary">
+            <div class="ds-sidenav__section ds-micro-label">Project</div>
+            <div class="ds-nav-item" aria-current="page">
+              <span class="ds-nav-item__icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3.5h9M2.5 7h9M2.5 10.5h6"/></svg></span>
+              Requirements
+              <span class="ds-nav-item__trailing">12</span>
+            </div>
+            <div class="ds-nav-item">
+              <span class="ds-nav-item__icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="2.6"/><path d="M1.5 7h2.9M9.6 7h2.9"/></svg></span>
+              Claims
+              <span class="ds-nav-item__trailing">8</span>
+            </div>
+            <div class="ds-nav-item">
+              <span class="ds-nav-item__icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.25 1.75h7v10.5h-7a1.5 1.5 0 010-3h7"/></svg></span>
+              Repositories
+              <span class="ds-nav-item__trailing">3</span>
+            </div>
+
+            <div class="ds-sidenav__section ds-micro-label">Trust</div>
+            <div class="ds-nav-item">
+              <span class="ds-nav-item__icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 1.75l4.25 1.6v3.4c0 2.6-1.75 4.6-4.25 5.5-2.5-.9-4.25-2.9-4.25-5.5v-3.4z"/></svg></span>
+              Transparency log
+            </div>
+            <div class="ds-nav-item">
+              <span class="ds-nav-item__icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3h9v8h-9z"/><path d="M2.5 5.75h9"/></svg></span>
+              Members
+              <span class="ds-nav-item__trailing">4</span>
+            </div>
+          </nav>
+        </div>
+      </section>
+
+      <section class="pv-section">
+        <h2 class="pv-section__title">Tabs</h2>
+        <div class="pv-frame">
+          <div class="ds-tabs">
+            <button class="ds-tab" role="tab" aria-selected="true">Report</button>
+            <button class="ds-tab" role="tab" aria-selected="false">Claimed commits<span class="ds-tab__count">2</span></button>
+            <button class="ds-tab" role="tab" aria-selected="false">Provenance</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="pv-section">
+        <h2 class="pv-section__title">Breadcrumb</h2>
+        <nav class="ds-breadcrumb" aria-label="Breadcrumb">
+          <a class="ds-breadcrumb__item" href="#">Projects</a>
+          <span class="ds-breadcrumb__sep"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5.25 3l4 4-4 4"/></svg></span>
+          <a class="ds-breadcrumb__item" href="#">Billing platform</a>
+          <span class="ds-breadcrumb__sep"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5.25 3l4 4-4 4"/></svg></span>
+          <a class="ds-breadcrumb__item" href="#">Claims</a>
+          <span class="ds-breadcrumb__sep"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5.25 3l4 4-4 4"/></svg></span>
+          <span class="ds-breadcrumb__item" aria-current="page">Claim #482</span>
+        </nav>
+      </section>
+    </div>
+
+    <script src="./_theme.js"></script>
+  </body>
+</html>
