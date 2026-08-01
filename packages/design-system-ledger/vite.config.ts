@@ -14,8 +14,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     open: true,
-    /* Component and gallery source live one level above the Vite root. */
-    fs: { allow: [".."] },
+    /* Component and gallery source live one level above the Vite root; the
+     * hoisted workspace node_modules lives three levels above it. */
+    fs: { allow: ["..", "../../.."] },
   },
   build: {
     outDir: "../dist",

@@ -1,7 +1,12 @@
 {
-  "name": "zkcvp-ledger",
+  "name": "@zkcvp/design-system-ledger",
   "private": true,
   "version": "0.1.0",
+  "exports": {
+    "./components": "./components/index.ts",
+    "./gallery": "./gallery/Gallery.tsx",
+    "./styles/*": "./styles/*"
+  },
   "type": "module",
   "description": "ZKCVP Ledger design system: tokens, plain-CSS component layer, React components, and a runnable gallery.",
   "scripts": {

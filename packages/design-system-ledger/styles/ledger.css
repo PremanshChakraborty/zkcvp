@@ -14,8 +14,4 @@
    ============================================================================= */
 
 @import "./fonts.css";
-@import "./tokens.css";
-@import "./base.css";
-@import "./components.css";
-@import "./domain.css";
-@import "./responsive.css";
+@import "./_layers.css";
