@@ -222,9 +222,11 @@ Constraints enforced **in Postgres**, not in application code:
 - partial unique index on `(project_id, github_user_id) WHERE status = 'pending'`
 - unique `(project_id, stakeholder_id)`, unique `(project_id, developer_id)`
 - unique `(requirement_id, version_number)`
-- `requirements.current_version_id` as a **deferrable** FK, so the create transaction can
-  insert requirement → version → update pointer atomically without a nullable window that
-  outlives the transaction
+- `requirements.current_version_id` **nullable**, exactly as plan 01 specifies — null only
+  transiently inside the create transaction (insert requirement → insert version → update
+  pointer), never null once the transaction commits. This and `requirement_versions.
+  requirement_id` form a circular reference, which Drizzle expresses with an
+  `AnyPgColumn` return-type annotation on the `.references()` callback
 - `developers.github_user_id` unique; it is the join key everywhere. `github_username` is
   cache-only and carries no constraint, per plan 01 invariant 2.
 
