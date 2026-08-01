@@ -1,0 +1,27 @@
+import { fileURLToPath } from "node:url";
+import type { NextConfig } from "next";
+
+/**
+ * The deployment host is deliberately undecided — serverless (Vercel-class) and
+ * a long-lived Node host are both live options, and the choice gets made once a
+ * real Evaluator run has been measured. Everything here exists to keep that
+ * decision cheap. See "Host-agnostic guarantees" in
+ * docs/superpowers/specs/2026-08-01-foundation-design.md.
+ */
+const nextConfig: NextConfig = {
+  /* Emits a self-contained Node server at .next/standalone/server.js, runnable
+   * under `node server.js` on Railway/Render/Fly/Docker. Vercel ignores it. */
+  output: "standalone",
+
+  /* The design system ships raw .ts/.tsx — Next compiles it in-app. */
+  transpilePackages: ["@zkcvp/design-system-ledger"],
+
+  /* The standalone tracer walks up to the workspace root to find hoisted deps.
+   * fileURLToPath (not `.pathname`) is required here: on Windows, a file://
+   * URL's `.pathname` keeps a leading slash before the drive letter
+   * ("/C:/Users/..."), which is not a valid native path and silently breaks
+   * output-file tracing (no .next/standalone is emitted, no error). */
+  outputFileTracingRoot: fileURLToPath(new URL("../../", import.meta.url)),
+};
+
+export default nextConfig;
