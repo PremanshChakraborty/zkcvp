@@ -41,14 +41,23 @@ mechanism, not for smart-contract execution.
 | Developer auth & repo access | GitHub OAuth, requesting `repo` scope — one token serves both developer identity and all repo reads. No GitHub App, no installation, no service-level credential anywhere in this design. |
 | Stakeholder auth | Email magic link — no shared password auth with developers |
 | Token custody | Held only in the developer's session, never persisted to a table — a deliberate choice, not a limitation; see below |
-| Deployment | Single serverless-style deployable (e.g. a Vercel-class platform) |
+| Deployment | Single deployable, host deliberately undecided — built host-agnostic (standalone Node output). Serverless (Vercel-class) and a long-lived Node host (Railway/Render/Fly-class) are both live options; see below |
 
 Resolved constraint from an earlier design pass: since repo reads are authenticated as
 the requesting developer's own live token rather than a stored service credential,
 evaluation runs **synchronously**, inside the same request that submits a claim — no
 background job, no queue, no persisted third-party credential to leak in a DB breach.
-Accepted tradeoff: total Evaluator work for one submission is capped by that request's
-serverless execution-time ceiling.
+That reasoning is about token custody, not about the runtime, so it holds on any host.
+
+What the host *does* decide is how much Evaluator work fits into one submission. On a
+serverless platform, total work is capped by that request's execution-time ceiling —
+low hundreds of seconds, platform- and plan-dependent. On a long-lived Node host there
+is no such ceiling. A batched LangGraph run doing multi-turn file reads across several
+commits is plausibly minutes-scale, so the difference is not theoretical — but it is a
+*deployment-target* choice, not a framework one. The app is built not to care: the
+orchestrator sits behind a clean entrypoint and the build emits a standalone Node
+server, so moving between the two is a host swap rather than a rewrite. The choice gets
+made once a real Evaluator run has been measured against a real repo.
 
 ## System components
 
@@ -203,5 +212,8 @@ library.
   mid-run GitHub rate-limit or failure, and in-flight UI are still open.
 - Future evidence-disclosure feature: a developer-consented way to reveal specific
   evidence-bundle contents to a stakeholder on request. Not designed, deliberately deferred.
+- Deployment host — serverless vs. long-lived Node. Deferred until a real Evaluator run
+  is measured against a real repo; the app is built host-agnostic so the answer changes
+  a deployment target, not the architecture.
 - Transparency Log backend choice (Rekor vs. self-hosted Trillian vs. hand-rolled MMR).
 - Auth implementation (library/provider) for the dual GitHub OAuth + email magic-link flows.

@@ -10,9 +10,11 @@ web
 
 Committed in `README.md` before this record existed: Next.js (TypeScript) as one app carrying
 UI, CRUD API, and the orchestrator entrypoint; Postgres for all relational state; LangGraph
-(TypeScript) for the Evaluator with the LLM provider left configurable; a single
-serverless-class deployable. No scaffold exists yet — `design-system/` is the only code in the
-repo, and it is framework-free plain CSS plus React TSX so it survives that scaffold unchanged.
+(TypeScript) for the Evaluator with the LLM provider left configurable; a single deployable.
+The *host* for that deployable is deliberately undecided — serverless (Vercel-class) and a
+long-lived Node host are both live options, and the app is built host-agnostic so the choice
+can be made late. No scaffold exists yet — `design-system/` is the only code in the repo, and
+it is framework-free plain CSS plus React TSX so it survives that scaffold unchanged.
 
 ## Users
 
@@ -61,7 +63,13 @@ Conflating those two is the single most damaging thing any surface could do.
   is a deliberate custody choice, not a limitation.
 - Because repo reads are authenticated as the requesting developer's own live token, evaluation
   runs **synchronously inside the request that submits the claim**. The developer's own browser
-  holds that request open. Total Evaluator work is capped by the platform's execution ceiling.
+  holds that request open. This follows from token custody, not from the runtime, so it holds on
+  any host.
+- How much Evaluator work fits in one submission depends on the deployment host, which is not
+  yet chosen: a serverless platform caps it at that request's execution-time ceiling, a
+  long-lived Node host does not cap it at all. Until that is settled, no surface may promise a
+  bound on how long an evaluation takes, and the in-flight experience must tolerate a wait of
+  minutes.
 - A claim pins one requirement version set plus one or more `(repo, commit SHA)` pairs. The
   Evaluator reads those exact SHAs, never live HEAD.
 - The Evaluator returns two structurally separate artifacts: an **evidence bundle** (raw tool-call
@@ -84,8 +92,8 @@ Conflating those two is the single most damaging thing any surface could do.
 - A report's `rationale` must never embed verbatim source code — file paths and line ranges are
   fine. This is a **generation-time constraint on the agent**, not a display-layer filter.
 - Deliberately undecided: claim submission and verification invocation (request/response shape,
-  mid-run rate-limit handling, in-flight UI); the transparency log backend; the auth library;
-  any evidence-disclosure feature.
+  mid-run rate-limit handling, in-flight UI); the deployment host; the transparency log backend;
+  the auth library; any evidence-disclosure feature.
 - **This build is a portfolio and demo piece.** Confirmed with the user: realistic placeholder
   content is acceptable and narrative clarity outranks exhaustive edge-case coverage. It does
   not license invented customers, metrics, or endorsements — see Evidence on Hand.
