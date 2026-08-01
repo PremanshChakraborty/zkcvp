@@ -28,7 +28,7 @@ this document and plan 01 disagree about a business rule, plan 01 wins.
 | ORM / DB access | Drizzle ORM over `pg`, against Supabase-as-hosted-Postgres |
 | Repo layout | npm workspaces monorepo |
 | Framework version | **Next.js 15.5.x**, pinned. React 19 |
-| Email delivery | Resend, starting on the no-DNS sandbox sender |
+| Email delivery | Console transport. No external provider in this build |
 | Test strategy | Vitest integration tests against real Postgres, written before handlers |
 
 Deliberately still open, and untouched by this document: the deployment host, the
@@ -66,9 +66,28 @@ Splitting into two instances removes it:
 - **Developer instance** — GitHub provider, **no adapter**, JWT strategy. Auth.js requires
   no adapter for OAuth + JWT, so nothing attempts to create a user row. The `developers`
   upsert happens in our own `signIn` callback.
-- **Stakeholder instance** — Resend provider, with a small adapter mapping only to
-  `stakeholders` and `verification_tokens`. The email flow genuinely needs verification-token
-  persistence, and that adapter never sees a GitHub sign-in.
+- **Stakeholder instance** — a custom `type: 'email'` provider, with a small adapter mapping
+  only to `stakeholders` and `verification_tokens`. The email flow genuinely needs
+  verification-token persistence, and that adapter never sees a GitHub sign-in.
+
+### Why email delivery is a seam, not a provider
+
+Magic links are printed to the server console in this build — no Resend, no SMTP, no
+external account. But the mechanism is isolated behind a single function rather than a
+provider choice:
+
+```ts
+type MagicLinkSender = (args: { email: string; url: string }) => Promise<void>;
+```
+
+The stakeholder instance is a custom provider whose `sendVerificationRequest` delegates to
+whichever `MagicLinkSender` `env.ts` selects. The console sender is the only implementation
+that ships. Adding Resend or SMTP later is a new ~10-line function and one env value — the
+provider, the adapter, the token table, and every test stay untouched.
+
+This is deliberate for the same reason the deployment host is: it keeps a decision cheap
+rather than making it now. It also means the full stakeholder auth flow is testable and
+demoable with zero external configuration.
 
 ---
 
@@ -223,11 +242,12 @@ push`/`migrate` needs Gate A.
 Tests create and drop a uniquely-named schema per run inside that same project, so no second
 database and no Docker is required.
 
-### M3 — Authentication · *needs **Gates B and C***
+### M3 — Authentication · *needs **Gate B***
 
 ```
 /api/auth/dev/*   GitHub provider · no adapter · JWT strategy
-/api/auth/sh/*    Resend provider · stakeholders-only adapter · JWT strategy
+/api/auth/sh/*    custom email provider · stakeholders-only adapter · JWT strategy
+                  sendVerificationRequest → MagicLinkSender (console)
 ```
 
 **Developer flow**, on every successful callback (plan 01, Identity & authentication):
@@ -274,13 +294,9 @@ Login pages ship in this milestone, styled with Ledger components:
 > Full step-by-step instructions delivered when reached. Produces:
 > `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`. Requests `repo` scope — no GitHub App, no
 > installation, no service credential, per README.
->
-> ### ⏸ Gate C — Resend API key
-> Full step-by-step instructions delivered when reached. Produces: `AUTH_RESEND_KEY`.
-> Starting on Resend's `onboarding@resend.dev` sender needs no DNS but delivers only to the
-> account owner's own address. Domain verification is a later, optional step. A
-> `AUTH_EMAIL_TRANSPORT=console` fallback prints the link to the server terminal, so this
-> gate never hard-blocks local development.
+
+Stakeholder login needs no gate at all: the magic link is printed to the server console, so
+the flow is complete and clickable from the first run.
 
 ### M4 — Plan 01 API · *no gate*
 
