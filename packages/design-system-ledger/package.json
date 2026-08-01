@@ -5,6 +5,7 @@
   "exports": {
     "./components": "./components/index.ts",
     "./gallery": "./gallery/Gallery.tsx",
+    "./gallery/*": "./gallery/*",
     "./styles/*": "./styles/*"
   },
   "type": "module",
