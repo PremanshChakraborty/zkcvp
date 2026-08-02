@@ -24,6 +24,19 @@ service. If the transparency log ever anchors a checkpoint externally, that's th
 place a blockchain-adjacent technique enters this design, and only as a cheap notarization
 mechanism, not for smart-contract execution.
 
+## Getting started
+
+```bash
+npm install
+cp .env.example packages/db/.env       # drizzle-kit + vitest read this one
+cp .env.example apps/web/.env.local    # Next.js reads this one — same values
+# fill in DATABASE_URL in both copies (Supabase → Project Settings → Database
+# → Connection string → Transaction pooler); EVAL_CEILING_SECONDS defaults to 300
+npm run verify   # typecheck + full test suite (hits the real DB) + design-system check
+```
+
+Nothing reads a root `.env` — see the comment in `.env.example` for why.
+
 ## Repo conventions
 
 - This file is the map: high-level shape only, no implementation detail.
