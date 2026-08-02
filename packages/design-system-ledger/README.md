@@ -1,35 +1,28 @@
 # ZKCVP · Ledger
 
-A second visual language over the ZKCVP domain. Tokens, a plain-CSS component
-layer, React (TSX) components, a runnable gallery, and hand-written specimen
-pages. No app pages: this is vocabulary, not screens.
+The visual language for the ZKCVP domain. Tokens, a plain-CSS component layer,
+React (TSX) components, a runnable gallery, and hand-written specimen pages.
+No app pages: this is vocabulary, not screens.
 
-**Direction: the record, not the terminal.** The first direction
-(`../design-system/`) reads like a forensic tool at 2am. Ledger reads like a
-countersigned document: light-first, high-contrast ink on paper, square ruled
-structure, a real measure for prose, and a compact density *context* for the
-developer's data surfaces rather than compactness as the default. It puts the
-shared artifact, the report a stakeholder has to trust, at the visual centre.
+**Direction: the record, not the terminal.** Ledger reads like a countersigned
+document: light-first, high-contrast ink on paper, square ruled structure, a
+real measure for prose, and a compact density *context* for the developer's
+data surfaces rather than compactness as the default. It puts the shared
+artifact, the report a stakeholder has to trust, at the visual centre.
 
-**The domain rules are identical.** `components/types.ts` is byte-for-byte the
-same file in both directions, deliberately. Two visual languages over one domain;
-if that file ever diverges, one of the two is telling a user something the other
-is not, and that is a bug rather than a design choice.
+**`components/types.ts` is the UI-facing source of truth for the domain
+enums.** It mirrors the database enums in `docs/plans/01-requirement-management.md`.
+`@zkcvp/contracts` carries its own copy of the same unions for non-UI consumers
+(the API layer and the Evaluator); the two have no compile-time link, so
+`packages/contracts/tests/enum-parity.test.ts` asserts textually that they
+agree. If they ever diverge, one surface is telling a user something the other
+is not — fix `@zkcvp/contracts` to match this file.
 
-**The two are drop-in swappable.** Every export name in `components/index.ts`
-matches the first direction. Switching an app between them is a change of two
-import paths.
-
-```tsx
-- import "@/design-system/styles/design-system.css";
-- import { VerdictCard, StatusBadge } from "@/design-system/components";
-+ import "@/design-system-ledger/styles/ledger.css";
-+ import { VerdictCard, StatusBadge } from "@/design-system-ledger/components";
-```
-
-Ledger adds names the first direction does not have (`Radio`, `Fieldset`,
-`ButtonGroup`, `Section`, `SectionHeading`, `StatusDot`, `ChecklistProgress`,
-`VerdictStatement`, `LogRef`, `BranchRef`, `LedgerIcons`) and removes none.
+An earlier visual direction (`design-system/`, a darker "forensic terminal"
+language) was explored and has been removed; Ledger was a strict superset of it,
+so nothing was lost. Some notes below still contrast the two where the
+comparison explains *why* a decision was made — those are design rationale, not
+a live dependency.
 
 ---
 

@@ -13,8 +13,9 @@ UI, CRUD API, and the orchestrator entrypoint; Postgres for all relational state
 (TypeScript) for the Evaluator with the LLM provider left configurable; a single deployable.
 The *host* for that deployable is deliberately undecided — serverless (Vercel-class) and a
 long-lived Node host are both live options, and the app is built host-agnostic so the choice
-can be made late. No scaffold exists yet — `design-system/` is the only code in the repo, and
-it is framework-free plain CSS plus React TSX so it survives that scaffold unchanged.
+can be made late. The scaffold now exists as an npm workspace: `apps/web` (Next.js) plus
+`packages/contracts`, `packages/db`, `packages/orchestrator`, and
+`packages/design-system-ledger`.
 
 ## Users
 
@@ -119,9 +120,11 @@ Real, in-repo:
 - `README.md` — the map: trust model, stack, component contracts, non-goals, open questions.
 - `docs/plans/01-requirement-management.md` — projects, RBAC, checklist, versioning, lifecycle.
 - `docs/plans/02-repo-attachment.md` — repo attachment and commit visibility.
-- `design-system/` — the token layer, plain-CSS component layer, React TSX components, and
-  static preview pages. Colour, font family, and spacing were ported from the user's Claude
-  Design project "ZKCVP Design System"; type scale, radii, elevation, and motion are local.
+- `packages/design-system-ledger/` — the token layer, plain-CSS component layer, React TSX
+  components, a runnable gallery, and static preview pages. Colour, font family, and spacing
+  were ported from the user's Claude Design project "ZKCVP Design System"; type scale, radii,
+  elevation, and motion are local. An earlier, darker visual direction was explored and
+  removed; Ledger was a strict superset of it.
 
 Absent, and **must not be fabricated**: customers, testimonials, case studies, logos, press,
 pricing, licensing, uptime or accuracy benchmarks, evaluation-quality metrics, user counts, and

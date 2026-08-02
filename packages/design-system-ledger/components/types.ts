@@ -5,10 +5,12 @@
  * exactly. Components accept these raw values rather than presentational props
  * ("green", "success") so a status can never be mis-rendered at a call site.
  *
- * This file is intentionally IDENTICAL to `design-system/components/types.ts`.
- * The two directions are two visual languages over one domain — if this file
- * ever diverges between them, one of the two is telling a user something the
- * other is not, and that is a bug rather than a design choice.
+ * This file is the UI-facing source of truth for these unions. `@zkcvp/contracts`
+ * carries its own copy for non-UI consumers (the API layer and the Evaluator) and
+ * deliberately has no compile-time link to this one, so
+ * packages/contracts/tests/enum-parity.test.ts asserts textually that the two
+ * agree. If they diverge, one surface is telling a user something the other is
+ * not — fix @zkcvp/contracts to match this file, not the reverse.
  */
 
 /** `requirement_versions.status` — the persisted enum. */

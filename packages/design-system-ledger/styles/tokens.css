@@ -3,13 +3,12 @@
    -----------------------------------------------------------------------------
    Direction: the record, not the terminal.
 
-   The first direction (`design-system/`) reads like a forensic tool at 2am —
-   dark canvas, hairline ramp, amber signal, dense by default. Ledger reads like
-   a countersigned document: light-first, high-contrast ink on paper, square
+   An earlier direction (since removed) read like a forensic tool at 2am — dark
+   canvas, hairline ramp, amber signal, dense by default. Ledger instead reads
+   like a countersigned document: light-first, high-contrast ink on paper, square
    ruled structure, a real measure for prose, and a compact density context for
-   the developer's data surfaces rather than compactness as the default.
-
-   Both encode identical domain rules. Only the visual language differs.
+   the developer's data surfaces rather than compactness as the default. Several
+   notes below contrast the two where it explains why a value was chosen.
 
    Light-first. `:root` holds the light values; dark is applied either by the OS
    preference or by an explicit `data-theme` on <html>. The explicit attribute

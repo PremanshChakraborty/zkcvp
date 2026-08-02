@@ -7,14 +7,9 @@
  *   import "@/design-system-ledger/styles/ledger.css";
  *   import { Button, StatusBadge } from "@/design-system-ledger/components";
  *
- * The export list below is deliberately name-for-name compatible with
- * `design-system/components`. Swapping the two directions in an app is a change
- * of two import paths, not a rewrite — that compatibility is the point of
- * shipping a second visual language rather than a second design system.
- *
- * Names present here and NOT in the first direction:
- *   Radio, Fieldset, ButtonGroup, Section, SectionHeading, StatusDot,
- *   ChecklistProgress, VerdictStatement, LogRef, BranchRef, LedgerIcons
+ * This list is the whole public surface. An earlier visual direction was
+ * explored and removed; this one was a strict superset of it, so nothing was
+ * lost in dropping it.
  */
 
 export { cx } from "./cx";
