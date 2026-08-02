@@ -43,10 +43,11 @@ Nothing reads a root `.env` — see the comment in `.env.example` for why.
 - `docs/plans/NN-feature-name.md` — the territory: a full, build-ready spec per feature,
   written once that feature's design is settled. Currently: `01-requirement-management.md`,
   `02-repo-attachment.md`.
-- `docs/superpowers/specs/` — design specs. `docs/superpowers/plans/` — implementation plans.
+- `docs/architecture.md` — how it is built: stack decisions, repo layout, and the milestone
+  plan for what is not built yet.
 - The repo is an npm workspace: `apps/web` is the deployable; `packages/contracts` (types
   only), `packages/db` (Drizzle schema), `packages/orchestrator` (stub), and
-  `packages/design-system-ledger` are its workspace dependencies.
+  `packages/design-system-ledger` are its workspace packages.
 
 ## Tech stack
 
@@ -126,7 +127,7 @@ flowchart LR
 | Claim submission & verification invocation | Not yet designed |
 | LangGraph Evaluator | Black-boxed — contract below, internals deferred |
 | Transparency Log | Black-boxed — contract below, backend choice deferred |
-| Application foundation (workspace, scaffold, contracts, schema) | Built — `docs/superpowers/plans/2026-08-01-foundation-m0-m2.md` |
+| Application foundation (workspace, scaffold, contracts, schema) | Built — see `docs/architecture.md` |
 
 ## Black-box contracts
 
@@ -236,5 +237,4 @@ library.
   a deployment target, not the architecture.
 - Transparency Log backend choice (Rekor vs. self-hosted Trillian vs. hand-rolled MMR).
 - ~~Auth implementation~~ — resolved: Auth.js v5, two separate instances (GitHub with no
-  adapter; email magic link with a stakeholders-only adapter). See
-  `docs/superpowers/specs/2026-08-01-foundation-design.md`.
+  adapter; email magic link with a stakeholders-only adapter). See `docs/architecture.md`.

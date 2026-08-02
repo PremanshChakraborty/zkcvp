@@ -6,7 +6,7 @@ import type { NextConfig } from "next";
  * a long-lived Node host are both live options, and the choice gets made once a
  * real Evaluator run has been measured. Everything here exists to keep that
  * decision cheap. See "Host-agnostic guarantees" in
- * docs/superpowers/specs/2026-08-01-foundation-design.md.
+ * docs/architecture.md.
  */
 const nextConfig: NextConfig = {
   /* Emits a self-contained Node server at .next/standalone/server.js, runnable
