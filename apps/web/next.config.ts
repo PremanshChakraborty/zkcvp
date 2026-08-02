@@ -13,8 +13,14 @@ const nextConfig: NextConfig = {
    * under `node server.js` on Railway/Render/Fly/Docker. Vercel ignores it. */
   output: "standalone",
 
-  /* The design system ships raw .ts/.tsx — Next compiles it in-app. */
-  transpilePackages: ["@zkcvp/design-system-ledger"],
+  /* @zkcvp/contracts and @zkcvp/db also ship raw, unbuilt .ts via their
+   * `exports` maps (no build step), same as the design system — Next must
+   * compile all three in-app rather than expecting pre-built JS. */
+  transpilePackages: [
+    "@zkcvp/design-system-ledger",
+    "@zkcvp/contracts",
+    "@zkcvp/db",
+  ],
 
   /* The standalone tracer walks up to the workspace root to find hoisted deps.
    * fileURLToPath (not `.pathname`) is required here: on Windows, a file://
