@@ -3,6 +3,14 @@ import type { GitHubReadTool, RepoCommit } from "./github";
 
 export type EvaluatorInput = {
   claim: {
+    /**
+     * Identifies the developer's submission that triggered this evaluation.
+     * This is a CALLER concept (it comes from the future claim-submission
+     * flow, not from the Evaluator itself), so it arrives via the input
+     * rather than being minted inside `evaluate()`. It is echoed back
+     * verbatim into both `EvidenceBundle.claimId` and `Report.claimId`.
+     */
+    claimId: string;
     /** One or more, shared across every requirement in this batch. */
     repoCommits: RepoCommit[];
   };
@@ -31,6 +39,13 @@ export type ToolCall = {
  * the two are separate operations and the first never requires the second.
  */
 export type EvidenceBundle = {
+  /**
+   * Identifies one *execution* of `evaluate()`. Unlike `claimId`, this is a
+   * CALLEE concept — a real implementation mints it itself (e.g.
+   * `crypto.randomUUID()` at the start of `evaluate()`) and uses the same
+   * value here and in the returned `Report`, rather than receiving it via
+   * `EvaluatorInput`.
+   */
   evaluationId: string;
   claimId: string;
   toolCallLog: ToolCall[];
