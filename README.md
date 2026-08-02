@@ -30,13 +30,18 @@ mechanism, not for smart-contract execution.
 - `docs/plans/NN-feature-name.md` — the territory: a full, build-ready spec per feature,
   written once that feature's design is settled. Currently: `01-requirement-management.md`,
   `02-repo-attachment.md`.
+- `docs/superpowers/specs/` — design specs. `docs/superpowers/plans/` — implementation plans.
+- The repo is an npm workspace: `apps/web` is the deployable; `packages/contracts` (types
+  only), `packages/db` (Drizzle schema), `packages/orchestrator` (stub), and
+  `packages/design-system-ledger` are its workspace dependencies.
 
 ## Tech stack
 
 | Concern | Decision |
 |---|---|
 | Framework | Next.js (TypeScript) — one app: UI, CRUD API, and orchestrator entrypoint |
-| Database | Postgres |
+| Framework version | Next.js 15.5.22, pinned exact — next-auth@5 is validated against Next 15 |
+| Database | Postgres (Supabase-hosted) via Drizzle ORM over node-postgres |
 | Orchestrator | LangGraph (TypeScript); LLM provider left configurable, not hard-coded |
 | Developer auth & repo access | GitHub OAuth, requesting `repo` scope — one token serves both developer identity and all repo reads. No GitHub App, no installation, no service-level credential anywhere in this design. |
 | Stakeholder auth | Email magic link — no shared password auth with developers |
@@ -108,6 +113,7 @@ flowchart LR
 | Claim submission & verification invocation | Not yet designed |
 | LangGraph Evaluator | Black-boxed — contract below, internals deferred |
 | Transparency Log | Black-boxed — contract below, backend choice deferred |
+| Application foundation (workspace, scaffold, contracts, schema) | Built — `docs/superpowers/plans/2026-08-01-foundation-m0-m2.md` |
 
 ## Black-box contracts
 
@@ -216,4 +222,6 @@ library.
   is measured against a real repo; the app is built host-agnostic so the answer changes
   a deployment target, not the architecture.
 - Transparency Log backend choice (Rekor vs. self-hosted Trillian vs. hand-rolled MMR).
-- Auth implementation (library/provider) for the dual GitHub OAuth + email magic-link flows.
+- ~~Auth implementation~~ — resolved: Auth.js v5, two separate instances (GitHub with no
+  adapter; email magic link with a stakeholders-only adapter). See
+  `docs/superpowers/specs/2026-08-01-foundation-design.md`.
