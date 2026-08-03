@@ -69,7 +69,7 @@ zkcvp/
 ├── packages/
 │   ├── contracts/                Evaluator I/O types, domain enums, GitHub tool interface
 │   ├── db/                       Drizzle schema, migrations, client factory
-│   ├── github/                   GitHub client — not yet built, see M3
+│   ├── github/                   GitHub client — token funnel; methods added as needed
 │   ├── design-system-ledger/     tokens, components, gallery
 │   └── orchestrator/             LangGraph Evaluator — built in a parallel workstream
 └── docs/
@@ -87,16 +87,22 @@ imports a concrete implementation.
 ## Status
 
 Built: the workspace, `apps/web` with the design system wired in, `@zkcvp/contracts`,
-and `@zkcvp/db` with all 10 tables migrated to Supabase.
+and `@zkcvp/db` with all 10 tables migrated to Supabase (Gate A done — `DATABASE_URL` is
+populated in `apps/web/.env.local` and `packages/db/.env`, both gitignored).
 
-Next: **M3 — auth and the GitHub client.**
+`next-auth@5.0.0-beta.32` is already installed in `apps/web` and pinned exact, but nothing
+imports it yet. The `verification_tokens` table already exists for the stakeholder adapter.
+
+Next: **M3 — OAuth and the GitHub token funnel.** Needs Gate B (see below).
 
 ---
 
-## M3 — Auth, GitHub client, and orchestrator E2E
+## M3 — OAuth and the GitHub token funnel
 
-Ordered first (before the plan-01 API) so the orchestrator workstream can test end-to-end
-against real private repos as soon as possible.
+Deliberately small: get both login flows working end to end, and stand up the seam that hands
+a developer's GitHub token to whoever needs it. Nothing more — no GitHub API surface, no read
+tool. Ordered before the plan-01 API so the orchestrator workstream has a real token source to
+build against.
 
 ```
 /api/auth/dev/*   GitHub provider · no adapter · JWT strategy
@@ -135,30 +141,26 @@ requireStakeholderMember(projectId): Promise<StakeholderSession>  // 403
 Edge on Vercel and in Node self-hosted; keeping authorization out of it eliminates the largest
 behavioural difference between deployment targets.
 
-### `packages/github`
+### `packages/github` — token funnel only
 
-Two things with different auth models, both here so `apps/web` and the orchestrator's dev
-harness share one implementation:
+M3 creates this package with **only** the auth-token plumbing: a client constructed from a
+developer's session access token, and nothing else. No fetch calls, no API methods.
 
-| | Auth | Consumer |
-|---|---|---|
-| `resolveGithubUser(username)` → numeric id + profile | unauthenticated | `apps/web` (plan 01 invite endpoint) |
-| `GitHubClient implements GitHubReadTool` | the developer's live session token, injected per call | constructed in `apps/web`, consumed by the orchestrator |
+```ts
+// the whole M3 surface
+export function createGitHubClient(accessToken: string): GitHubClient;
+```
 
-Native `fetch`, no SDK. No dependency on Next.js. `apps/web` depends on it in production;
-`packages/orchestrator` may take it as a **devDependency** for local testing, never in
-production code.
+Native `fetch`, no SDK, no dependency on Next.js. Methods get added **as a caller actually
+needs them**, not up front — `resolveGithubUser` arrives in M4 with the invite endpoint.
 
-### Orchestrator E2E path
+**The `GitHubReadTool` implementation is not built here.** Reading repo contents at pinned
+commits is the orchestrator workstream's concern; it owns that implementation and takes a
+token. `apps/web`'s job is to hold the token in the session and hand it over — that seam is
+what this package is for.
 
-A throwaway `POST /api/dev/evaluate` reads the session, constructs a real `GitHubReadTool`
-from the real token, calls `evaluate()` in-process, and returns the artifacts. Log in once in
-a browser (real OAuth consent), then drive everything else from Postman with the session
-cookie.
-
-This endpoint is **disposable** and is not the real claim-submission API — that is still
-undesigned, and will resolve `requirementVersionId` and commits from real DB rows rather than
-raw JSON. Name it so nobody mistakes it for permanent surface.
+Wiring the two together end-to-end (a disposable endpoint that constructs a read tool and
+calls `evaluate()`) belongs to whoever has a working read tool first. Not M3.
 
 > **⏸ Gate B — GitHub OAuth app.** Produces `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`. Requests
 > `repo` scope — no GitHub App, no installation, no service credential. Stakeholder login needs
@@ -168,7 +170,11 @@ Login pages ship here, styled with Ledger components: `/login`, `/login/email`.
 
 ---
 
-## M4 — Plan 01 API
+## M4 — Requirement management and the stakeholder UI
+
+Plan 01's ten endpoints plus the stakeholder-facing screens, built together rather than as two
+separate passes. `packages/github` gains `resolveGithubUser` here — the invite endpoint is its
+first real caller. Keep adding GitHub methods only when a caller needs one.
 
 All ten endpoints, test-first:
 
@@ -203,7 +209,9 @@ resolve only via workspace hoisting.
 
 ---
 
-## M5 — Checklist UI
+## M5 — Remaining checklist screens
+
+Runs with M4 rather than after it; split out here only because the route list is long.
 
 | Route | Role | Notes |
 |---|---|---|
