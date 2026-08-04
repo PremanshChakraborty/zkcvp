@@ -1,0 +1,59 @@
+// apps/web/app/login/email/EmailForm.tsx
+"use client";
+
+import { useActionState } from "react";
+import {
+  Alert,
+  Button,
+  Field,
+  Input,
+} from "@zkcvp/design-system-ledger/components";
+import { requestMagicLink, type RequestMagicLinkState } from "./actions";
+
+const INITIAL_STATE: RequestMagicLinkState = { status: "idle" };
+
+export function EmailForm() {
+  const [state, formAction, pending] = useActionState(
+    requestMagicLink,
+    INITIAL_STATE,
+  );
+
+  if (state.status === "sent") {
+    return (
+      <Alert tone="success" title="Link sent">
+        A sign-in link for {state.email} was printed to the server console —
+        no email provider is configured yet. Copy the URL from there.
+      </Alert>
+    );
+  }
+
+  return (
+    <form action={formAction}>
+      {/* The field and its submit button are separate blocks; without a stack
+          the button sits flush against the input's bottom edge. */}
+      <div className="lg-stack">
+        <Field
+          label="Email address"
+          error={state.status === "error" ? state.message : undefined}
+        >
+          {({ id, describedBy, invalid }) => (
+            <Input
+              id={id}
+              name="email"
+              type="email"
+              required
+              autoComplete="email"
+              aria-describedby={describedBy}
+              invalid={invalid}
+            />
+          )}
+        </Field>
+        <div>
+          <Button type="submit" tone="primary" loading={pending}>
+            Send sign-in link
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
+}
