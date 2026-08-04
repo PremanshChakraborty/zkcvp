@@ -46,47 +46,58 @@ export const {
       }),
     ],
     callbacks: {
-      async signIn({ user, profile }) {
-        /* A missing profile IS a genuine refusal — GitHub told us nothing to
-         * identify this person by, so there is no developer to sign in. */
-        if (!profile) return false;
-        const github = profile as unknown as RawGitHubProfile;
-
-        let developerId: string;
-        try {
-          const db = createDb(e.DATABASE_URL);
-          ({ developerId } = await upsertDeveloperAndAcceptInvites(db, {
-            githubUserId: String(github.id),
-            githubUsername: github.login,
-            displayName: github.name ?? github.login,
-            avatarUrl: github.avatar_url,
-          }));
-        } catch (cause) {
-          /* Not a denial — we could not reach the identity store. Logged with
-           * the GitHub id (never the token) so the failure is attributable
-           * without leaking a credential. See errors.ts. */
-          console.error(
-            `[auth][dev] identity store unavailable for github_user_id=${github.id}`,
-            cause,
-          );
-          throw new IdentityStoreUnavailable("developer upsert failed", {
-            cause,
-          });
-        }
-
-        /* Mutating `user` here and reading it back in `jwt` below relies on
-         * Auth.js passing the same object reference through both callbacks
-         * when no adapter is configured (verified against
-         * @auth/core/lib/actions/callback/index.js and handle-login.js). */
-        (user as unknown as Record<string, unknown>).developerId = developerId;
-        return true;
+      async signIn({ profile }) {
+        /* Refusal only. A missing profile IS a genuine refusal — GitHub told
+         * us nothing to identify this person by, so there is no developer to
+         * sign in. Everything else happens in `jwt` below. */
+        return Boolean(profile);
       },
-      async jwt({ token, user, account }) {
-        if (user) {
-          token.developerId = (user as unknown as Record<string, unknown>)
-            .developerId as string;
-        }
-        if (account?.access_token) {
+      async jwt({ token, account, profile }) {
+        /* `account` and `profile` are passed by @auth/core only on the initial
+         * sign-in (callback/index.js:78-85) and are absent on every later token
+         * refresh — so this branch is exactly "the developer just logged in",
+         * and the upsert cannot re-run per request.
+         *
+         * Deliberately NOT the previous approach of writing developerId onto
+         * `user` in `signIn` and reading it back here. That worked only because
+         * @auth/core happened to pass the same object reference to both
+         * callbacks, which holds solely while no adapter is configured
+         * (handle-login.js:24 returns the profile by reference). Had that ever
+         * become a copy, developerId would have silently gone undefined — and
+         * the session cookie would STILL have been written, so the developer
+         * would appear signed in while requireSession() threw 401. Reading the
+         * values @auth/core passes us explicitly has no such failure mode. */
+        if (account && profile) {
+          const github = profile as unknown as RawGitHubProfile;
+          try {
+            const db = createDb(e.DATABASE_URL);
+            const { developerId } = await upsertDeveloperAndAcceptInvites(db, {
+              githubUserId: String(github.id),
+              githubUsername: github.login,
+              displayName: github.name ?? github.login,
+              avatarUrl: github.avatar_url,
+            });
+            token.developerId = developerId;
+          } catch (cause) {
+            /* Not a denial — we could not reach the identity store. Logged with
+             * the GitHub id (never the token) so the failure is attributable
+             * without leaking a credential.
+             *
+             * Thrown from `jwt` rather than `signIn`, but the custom type still
+             * survives: callback()'s outer catch carries the same
+             * `if (e instanceof AuthError) throw e` guard as handleAuthorized
+             * (callback/index.js:386), so this is not flattened into
+             * CallbackRouteError. And `jwt` runs before the cookie is encoded,
+             * so a throw here still means no session — it fails closed exactly
+             * as it did before. See errors.ts. */
+            console.error(
+              `[auth][dev] identity store unavailable for github_user_id=${github.id}`,
+              cause,
+            );
+            throw new IdentityStoreUnavailable("developer upsert failed", {
+              cause,
+            });
+          }
           token.githubAccessToken = account.access_token;
         }
         return token;
