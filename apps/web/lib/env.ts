@@ -20,6 +20,30 @@ const schema = z.object({
   EVAL_CEILING_SECONDS: z.coerce.number().int().positive().default(300),
 
   NODE_ENV: z.string().default("development"),
+
+  /* Auth.js JWT encryption/signing secret, shared by both instances — the two
+   * disjoint session cookies (dev/sh) don't need separate secrets, since the
+   * cookie name itself is what keeps them apart. */
+  AUTH_SECRET: z.string().min(1, "AUTH_SECRET is required"),
+
+  /* Gate B — GitHub OAuth app credentials. Deliberately optional: the
+   * stakeholder magic-link flow must keep working before Gate B is done (see
+   * docs/architecture.md, M3). Left unset, the GitHub provider builds with an
+   * empty client id/secret and only the developer login path is affected. */
+  AUTH_GITHUB_ID: z.string().optional(),
+  AUTH_GITHUB_SECRET: z.string().optional(),
+
+  /* Public origin of this deployment, e.g. https://zkcvp.example.com.
+   *
+   * Optional, but strongly recommended in production. When set, Auth.js
+   * derives callback/action URLs from it instead of from the incoming
+   * request's Host header, which removes host-header spoofing as a way to
+   * redirect an OAuth callback. Unset, we fall back to trusting the proxy's
+   * headers (see `trustHost` in developer.ts / stakeholder.ts).
+   *
+   * Read here only so the value is validated and documented in one place;
+   * Auth.js reads process.env.AUTH_URL itself. */
+  AUTH_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof schema>;

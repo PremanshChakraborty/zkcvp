@@ -1,11 +1,18 @@
 // packages/db/tests/harness.ts
-import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { fileURLToPath } from "node:url";
 import { readFileSync, readdirSync } from "node:fs";
 import pg from "pg";
 import * as schema from "../src/schema/index";
+import type { Db } from "../src/client";
 
-export type TestDb = NodePgDatabase<typeof schema>;
+/**
+ * Same type as production `Db` (not just structurally similar `NodePgDatabase<
+ * typeof schema>`, which is missing `$client`) — every function under test
+ * takes `db: Db`, so the harness must hand back exactly that type or callers
+ * need a cast at every call site.
+ */
+export type TestDb = Db;
 
 /**
  * Runs a test against a private, uniquely-named schema inside the ONE Supabase

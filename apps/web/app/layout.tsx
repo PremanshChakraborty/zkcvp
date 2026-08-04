@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import "@zkcvp/design-system-ledger/styles/ledger.app.css";
+/* After the design system, so app-level layout classes can extend it. */
+import "./app.css";
 import { LedgerIcons } from "@zkcvp/design-system-ledger/components";
 
 /* Self-hosted at build time by next/font. No network request at runtime, and no

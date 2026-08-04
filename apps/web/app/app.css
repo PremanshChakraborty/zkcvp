@@ -1,0 +1,29 @@
+/* apps/web/app/app.css
+ *
+ * App-level layout only. Nothing here restyles a Ledger component — if a
+ * component needs a change it belongs in the design system with a render-check
+ * assertion, not overridden from the app.
+ *
+ * Loaded AFTER ledger.app.css in layout.tsx, which is what lets --narrow win
+ * over .lg-container's max-width (both are single-class selectors).
+ */
+
+/* `.lg-container` is deliberately horizontal-only — max-width plus
+ * padding-inline, no vertical rhythm. The design system's own preview harness
+ * pairs it with vertical padding the same way (previews/preview.css). Without
+ * this, page content sits flush against the top of the viewport. */
+.app-page {
+  padding-block: var(--lg-space-7) var(--lg-space-8);
+}
+
+/* Auth screens are one short column. At the default 1200px an email field
+ * stretches the full width of the window, which reads as a mistake and makes
+ * the input's left and right ends land in different parts of the screen.
+ *
+ * Two classes deliberately: this competes with `.lg-container`'s own
+ * max-width, and relying on stylesheet order to break the tie is fragile —
+ * the bundler decides that, not the import statement. Verified: with a
+ * single-class selector the container's 1200px won. */
+.app-page.app-page--narrow {
+  max-width: 34rem;
+}

@@ -90,14 +90,22 @@ Built: the workspace, `apps/web` with the design system wired in, `@zkcvp/contra
 and `@zkcvp/db` with all 10 tables migrated to Supabase (Gate A done — `DATABASE_URL` is
 populated in `apps/web/.env.local` and `packages/db/.env`, both gitignored).
 
-`next-auth@5.0.0-beta.32` is already installed in `apps/web` and pinned exact, but nothing
-imports it yet. The `verification_tokens` table already exists for the stakeholder adapter.
+**M3 is built and Gate B is done.** Both Auth.js instances, `packages/github`'s token
+funnel, session resolution, and the login pages are wired against the real Postgres
+schema. Identity upsert, invite-acceptance, and the authorization matrix are
+integration-tested. Both flows are confirmed end-to-end against the live database: the
+stakeholder magic link (request → console link → callback → session cookie → row) and
+the developer GitHub sign-in (a real `developers` row carrying the numeric
+`github_user_id`, cached username and avatar).
 
-Next: **M3 — OAuth and the GitHub token funnel.** Needs Gate B (see below).
+`AUTH_SECRET`, `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET` are all populated in
+`apps/web/.env.local`.
+
+Next: **M4 — Requirement management and the stakeholder UI.**
 
 ---
 
-## M3 — OAuth and the GitHub token funnel
+## M3 — OAuth and the GitHub token funnel (built)
 
 Deliberately small: get both login flows working end to end, and stand up the seam that hands
 a developer's GitHub token to whoever needs it. Nothing more — no GitHub API surface, no read
@@ -162,11 +170,55 @@ what this package is for.
 Wiring the two together end-to-end (a disposable endpoint that constructs a read tool and
 calls `evaluate()`) belongs to whoever has a working read tool first. Not M3.
 
-> **⏸ Gate B — GitHub OAuth app.** Produces `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`. Requests
-> `repo` scope — no GitHub App, no installation, no service credential. Stakeholder login needs
-> no gate; the magic link prints to the console.
+> **✅ Gate B — GitHub OAuth app.** Done. Supplies `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`,
+> requesting `repo` scope — no GitHub App, no installation, no service credential.
+> Stakeholder login needed no gate; the magic link prints to the console.
 
-Login pages ship here, styled with Ledger components: `/login`, `/login/email`.
+Login pages ship here, styled with Ledger components: `/login`, `/login/email`,
+`/login/error`.
+
+### The `@auth/core` patch — required, not optional
+
+`patches/@auth+core+0.41.3.patch` moves three `let` declarations inside `assertConfig`.
+Upstream keeps `hasCredentials`/`hasEmail`/`hasWebAuthn` at **module scope**, sets them to
+`true`, and never resets them. Two Auth.js instances in one process therefore share them:
+once the stakeholder instance (email provider) asserts, the adapter-less developer instance
+is told *"Email login requires an adapter"* and **every GitHub sign-in 500s**.
+
+It is order-dependent and so looks intermittent — GitHub login works on a freshly started
+server right up until something touches the stakeholder flow. It also reports itself as a
+*second*, unrelated `UnknownAction` error, because the config failure redirects to a signin
+page that rejects the provider id in the path.
+
+Adding an adapter to the developer instance is **not** an alternative: with one present,
+`handle-login.js` calls `createUser` + `linkAccount` on the OAuth path unconditionally,
+regardless of session strategy, which would write developers through the stakeholder-shaped
+adapter and break the two-disjoint-tables rule.
+
+- `0.41.3` is the latest published `@auth/core`, and `next-auth@5.0.0-beta.32` the latest
+  v5 beta — there is no version to upgrade to. Both are pinned exact, so the patch cannot
+  drift silently; `patch-package` fails the install if the target file changes.
+- `apps/web/tests/auth/authjs-patch.test.ts` guards it. The failure mode is silent and
+  delayed, so this test is the thing that catches `npm ci --ignore-scripts` or a fresh
+  clone whose `postinstall` never ran.
+- **After applying or changing the patch, delete `apps/web/.next`.** Webpack's persistent
+  cache keeps the pre-patch copy of `@auth/core` and does not invalidate on the patch, so
+  the bug appears to survive a fix that is actually applied. This cost real debugging time.
+- `postinstall` runs `patch-package`, which is a **devDependency** — a deploy step doing
+  `npm ci --omit=dev` will fail on it. Install with dev dependencies present (which a Next
+  build needs anyway), or promote the dependency.
+
+### `trustHost`
+
+Both instances set `trustHost: true` in `lib/auth/base-config.ts`. Auth.js's default is
+`!!(AUTH_URL ?? AUTH_TRUST_HOST ?? VERCEL ?? CF_PAGES ?? NODE_ENV !== "production")`, and
+it is the *first* check in `assertConfig`. On the self-hosted Node targets this project
+commits to, none of those are set in production — so the default is `false` and **both
+logins would 500 in production**, while working fine in development off the last clause.
+
+Setting `AUTH_URL` in production is strongly recommended alongside it: Auth.js then builds
+callback URLs from that value instead of the request's `Host` header, which is what makes
+trusting the proxy safe.
 
 ---
 
