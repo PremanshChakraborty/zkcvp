@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
     "@zkcvp/contracts",
     "@zkcvp/db",
     "@zkcvp/github",
+    "@zkcvp/orchestrator",
   ],
 
   /* The standalone tracer walks up to the workspace root to find hoisted deps.
