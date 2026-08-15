@@ -6,7 +6,6 @@ import {
   Card,
   CardBody,
   CardHeader,
-  DescriptionList,
   PageHeader,
   Section,
   SectionHeading,
@@ -14,7 +13,6 @@ import {
   Timeline,
   TimelineItem,
   VersionPill,
-  type DescriptionListProps,
 } from "@zkcvp/design-system-ledger/components";
 import { getDb } from "../../../lib/db";
 import { requireSession } from "../../../lib/auth/session";
@@ -49,32 +47,21 @@ export default async function RequirementPage({
   const archived = requirement.archivedAt !== null;
   const isStakeholder = session.kind === "stakeholder";
 
-  /* `archived_at` and the current version's `status` are independent axes —
-   * plan 01, invariant 5: "never let one imply or overwrite the other." A row
-   * in a list folds them because it has room for one badge; this page has room
-   * for both, so the status badge always reports the version's own status and
-   * archival is stated separately, as the date it happened. */
-  const facts: DescriptionListProps["items"] = [
-    { term: "Status", value: <StatusBadge status={requirement.status} /> },
-    {
-      term: "Current version",
-      value: <VersionPill version={requirement.versionNumber} current />,
-    },
-    { term: "Created", value: dateTimeFormat.format(requirement.createdAt) },
-    ...(requirement.archivedAt
-      ? [
-          {
-            term: "Archived",
-            value: dateTimeFormat.format(requirement.archivedAt),
-          },
-        ]
-      : []),
-  ];
-
   return (
     <main className="lg-container app-page">
       <PageHeader
-        title={requirement.title}
+        /* Archived dims the title and nothing more — never struck through,
+         * never emptied (docs/architecture.md, "Display rules"). `title` is a
+         * ReactNode, and `lg-text-muted` is a general Ledger tone utility, so
+         * this composes the design system rather than restyling it. */
+        title={
+          archived ? (
+            <span className="lg-text-muted">{requirement.title}</span>
+          ) : (
+            requirement.title
+          )
+        }
+        lead={`Created ${dateTimeFormat.format(requirement.createdAt)}`}
         actions={
           /* An archived requirement cannot be edited — editRequirement returns
            * 404 for one — so the affordance is not offered rather than offered
@@ -109,12 +96,38 @@ export default async function RequirementPage({
         ) : null}
 
         <Card>
-          <CardHeader title="Current version" />
+          <CardHeader
+            title="Current version"
+            /* Two axes, two chips, side by side. `archived_at` and the current
+             * version's `status` are independent — plan 01, invariant 5:
+             * "never let one imply or overwrite the other" — so unlike a
+             * RequirementRow, which folds them because it has room for one
+             * badge, this page keeps the status badge reporting the version's
+             * own status and adds the archived chip beside it. The archived
+             * chip is dashed rather than filled precisely so it can never be
+             * read as a fourth status. */
+            actions={
+              /* One wrapping row: `.lg-card__header` does not wrap, and three
+               * chips plus a timestamp next to a title will not fit a phone. */
+              <span className="lg-row-flex lg-row-flex--wrap">
+                <VersionPill version={requirement.versionNumber} current />
+                <StatusBadge status={requirement.status} />
+                {requirement.archivedAt ? (
+                  /* The date rides with the chip rather than occupying a row of
+                   * its own — the chip already carries the fact, the date only
+                   * says when. Nested so the two never split across lines. */
+                  <span className="lg-row-flex">
+                    <StatusBadge status="archived" />
+                    <span className="lg-caption">
+                      {dateTimeFormat.format(requirement.archivedAt)}
+                    </span>
+                  </span>
+                ) : null}
+              </span>
+            }
+          />
           <CardBody>
-            <div className="lg-stack">
-              <p className="lg-prose">{requirement.description}</p>
-              <DescriptionList items={facts} />
-            </div>
+            <p className="lg-prose">{requirement.description}</p>
           </CardBody>
         </Card>
 
