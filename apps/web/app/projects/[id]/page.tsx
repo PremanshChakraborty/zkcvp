@@ -34,13 +34,15 @@ export default async function ProjectPage({
 
   const project = await getProject(db, session, id);
 
-  /* Archived requirements stay on the checklist rather than disappearing from
-   * it. There is no un-archive in this phase, so a row dropped here would be
-   * unreachable; and ChecklistProgress computes its denominator by excluding
-   * archived entries itself, which only works if they are in the array. */
-  const requirements = await listRequirements(db, session, id, {
-    includeArchived: true,
-  });
+  /* This IS the active checklist view, so it takes the service's default and
+   * excludes archived rows — plan 01, "Archiving vs. status": "Archiving
+   * removes a requirement from the active checklist view; it says nothing
+   * about whether it was ever verified."
+   *
+   * The archived rendering path below is therefore unreachable today, and that
+   * is deliberate: it stays wired so an explicit "show archived" toggle is a
+   * change to this one call rather than to the rows. */
+  const requirements = await listRequirements(db, session, id);
 
   const isStakeholder = session.kind === "stakeholder";
 
