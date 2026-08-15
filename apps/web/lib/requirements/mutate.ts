@@ -23,18 +23,21 @@ export async function editRequirement(
   const current = await loadRequirement(db, requirementId);
   const caller = await assertStakeholderMember(db, session, current.projectId);
 
-  /* Plan 01: 404 if archived. There is no status-based precondition — a
-   * requirement is editable in any status. */
-  if (current.archivedAt !== null) {
-    throw notFound("This requirement is archived");
-  }
-
   return db.transaction(async (tx) => {
-    await tx
-      .select({ id: requirements.id })
+    const [locked] = await tx
+      .select({ archivedAt: requirements.archivedAt })
       .from(requirements)
       .where(eq(requirements.id, requirementId))
       .for("update");
+
+    /* Re-checked HERE, not before the transaction: the lock is what makes this
+     * authoritative. A concurrent archive committing between an outside check
+     * and this lock would otherwise let a new version land on an archived
+     * requirement. There is no status-based precondition — a requirement is
+     * editable in any status, only archival blocks it. */
+    if (locked.archivedAt !== null) {
+      throw notFound("This requirement is archived");
+    }
 
     const [latest] = await tx
       .select({
