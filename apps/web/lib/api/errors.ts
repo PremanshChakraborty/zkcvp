@@ -47,12 +47,24 @@ export const githubUnavailable = (
   message = "GitHub could not be reached. Try again shortly.",
 ) => new ServiceError(503, "github_unavailable", message);
 
-/** Postgres unique-violation SQLSTATE. */
+/**
+ * Postgres unique-violation SQLSTATE.
+ *
+ * drizzle-orm/node-postgres wraps every driver error in a `DrizzleQueryError`
+ * that carries the raw `pg` error on `.cause` rather than copying `.code`
+ * onto itself, so the SQLSTATE has to be found by walking the cause chain.
+ */
 export function isUniqueViolation(e: unknown): boolean {
-  return (
-    typeof e === "object" &&
-    e !== null &&
-    "code" in e &&
-    (e as { code?: unknown }).code === "23505"
-  );
+  let current: unknown = e;
+  for (let i = 0; i < 5 && current; i++) {
+    if (
+      typeof current === "object" &&
+      "code" in current &&
+      (current as { code?: unknown }).code === "23505"
+    ) {
+      return true;
+    }
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
 }
