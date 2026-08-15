@@ -1,16 +1,6 @@
 // apps/web/lib/auth/errors.ts
 import { AuthError } from "next-auth";
 
-export class SessionError extends Error {
-  constructor(
-    public readonly status: 401 | 403,
-    message: string,
-  ) {
-    super(message);
-    this.name = "SessionError";
-  }
-}
-
 /**
  * The identity store could not be reached — the sign-in did not fail, we did.
  *

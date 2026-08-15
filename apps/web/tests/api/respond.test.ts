@@ -1,6 +1,6 @@
 // apps/web/tests/api/respond.test.ts
 import { describe, expect, it } from "vitest";
-import { SessionError } from "../../lib/auth/session";
+import { SessionError } from "../../lib/auth/session-error";
 import { ServiceError, conflict, notFound } from "../../lib/api/errors";
 import { errorResponse, handle } from "../../lib/api/respond";
 

@@ -1,5 +1,5 @@
 // apps/web/lib/api/respond.ts
-import { SessionError } from "../auth/session";
+import { SessionError } from "../auth/session-error";
 import { ServiceError } from "./errors";
 
 /**
