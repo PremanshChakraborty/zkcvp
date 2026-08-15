@@ -1,12 +1,12 @@
 // apps/web/lib/projects/service.ts
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import {
   projectDevelopers,
   projectStakeholders,
   projects,
   type Db,
 } from "@zkcvp/db";
-import { isProjectMember } from "../auth/authorization";
+import { isProjectMember, isStakeholderMember } from "../auth/authorization";
 import type { Session, StakeholderSession } from "../auth/types";
 import { forbidden, notFound } from "../api/errors";
 
@@ -104,15 +104,8 @@ export async function assertStakeholderMember(
   if (session.kind !== "stakeholder") {
     throw forbidden("Only a stakeholder may perform this action");
   }
-  const [row] = await db
-    .select()
-    .from(projectStakeholders)
-    .where(
-      and(
-        eq(projectStakeholders.stakeholderId, session.stakeholderId),
-        eq(projectStakeholders.projectId, projectId),
-      ),
-    );
-  if (!row) throw forbidden();
+  if (!(await isStakeholderMember(db, session.stakeholderId, projectId))) {
+    throw forbidden();
+  }
   return session;
 }

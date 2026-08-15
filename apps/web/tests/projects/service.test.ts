@@ -9,7 +9,12 @@ import {
   stakeholders,
 } from "@zkcvp/db/schema";
 import type { Db } from "@zkcvp/db";
-import { createProject, getProject, listProjects } from "../../lib/projects/service";
+import {
+  assertStakeholderMember,
+  createProject,
+  getProject,
+  listProjects,
+} from "../../lib/projects/service";
 import { ServiceError } from "../../lib/api/errors";
 
 const HOUR = 60_000;
@@ -130,6 +135,44 @@ describe("getProject", () => {
 
       expect(err).toBeInstanceOf(ServiceError);
       expect((err as ServiceError).status).toBe(403);
+    });
+  }, HOUR);
+});
+
+describe("assertStakeholderMember", () => {
+  it("returns the session for a member, and throws 403 for a non-member or a developer", async () => {
+    await withTestSchema(async (db) => {
+      const member = await aStakeholder(db, "member@example.com");
+      const outsider = await aStakeholder(db, "outsider2@example.com");
+      const dev = await aDeveloper(db, "1010101");
+      const p = await createProject(
+        db,
+        { kind: "stakeholder", stakeholderId: member.id },
+        { name: "Restricted" },
+      );
+      await db
+        .insert(projectDevelopers)
+        .values({ projectId: p.id, developerId: dev.id, addedBy: member.id });
+
+      const memberSession = { kind: "stakeholder" as const, stakeholderId: member.id };
+      const result = await assertStakeholderMember(db, memberSession, p.id);
+      expect(result).toBe(memberSession);
+
+      const outsiderErr = await assertStakeholderMember(
+        db,
+        { kind: "stakeholder", stakeholderId: outsider.id },
+        p.id,
+      ).catch((e) => e);
+      expect(outsiderErr).toBeInstanceOf(ServiceError);
+      expect((outsiderErr as ServiceError).status).toBe(403);
+
+      const devErr = await assertStakeholderMember(
+        db,
+        { kind: "developer", developerId: dev.id, githubAccessToken: "tok" },
+        p.id,
+      ).catch((e) => e);
+      expect(devErr).toBeInstanceOf(ServiceError);
+      expect((devErr as ServiceError).status).toBe(403);
     });
   }, HOUR);
 });
