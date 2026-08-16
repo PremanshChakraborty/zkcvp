@@ -101,8 +101,19 @@ the developer GitHub sign-in (a real `developers` row carrying the numeric
 `AUTH_SECRET`, `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET` are all populated in
 `apps/web/.env.local`.
 
-In progress: **M4 — Requirement management and the stakeholder UI.** Scope is the ten
-endpoints, `resolveGithubUser`, `middleware.ts`, and the seven stakeholder-facing screens.
+**M4 is built.** All ten endpoints (`/api/projects` and its subroutes, `/api/requirements/:id`
+and its subroutes), `resolveGithubUser` in `packages/github`, `apps/web/middleware.ts`, and the
+seven stakeholder-facing screens — `/projects`, `/projects/new`, `/projects/[id]`,
+`/projects/[id]/requirements/new`, `/requirements/[id]`, `/requirements/[id]/edit`, and
+`/projects/[id]/members` — are wired against the real Postgres schema and integration-tested.
+
+Known limitation, deliberately unaddressed in M4: nothing in `apps/web` catches a
+`SessionError` thrown from a Server Component. Middleware only checks cookie presence, so an
+authenticated developer who is not a stakeholder can navigate to a stakeholder-only page such
+as `/projects/new` and gets Next's generic framework error page rather than a designed state.
+The project owner decided not to address this in M4.
+
+Next: **M5 — Remaining checklist screens.**
 
 ---
 
@@ -338,7 +349,10 @@ never a thrown error page.
 
 ## M5 — Remaining checklist screens
 
-Runs with M4 rather than after it; split out here only because the route list is long.
+All seven routes below were delivered during M4, built role-aware from the start rather than
+revisited later (see M4, Screens — `/projects` and `/projects/[id]` share one query with a
+single `session.kind` conditional; `/requirements/[id]` and `/projects/[id]/members` follow the
+same pattern). This table is kept as the role-split reference, not a list of pending work.
 
 | Route | Role | Notes |
 |---|---|---|
@@ -390,6 +404,11 @@ needed.
 
 Vitest, integration-first, against a real Postgres schema created and dropped per run
 (`packages/db/tests/harness.ts`). Handlers are written after their tests.
+
+`vitest.config.ts` caps `maxWorkers` at 2: each `withTestSchema` call opens its own pools, and
+the project's Postgres instance has a low connection ceiling — the config file carries the
+measured runs behind that number. `packages/orchestrator/tests/**` is excluded from the suite;
+it is a manual script that needs live GitHub and LLM credentials, not a collectable test file.
 
 Coverage targets invariants that actually break, not line count: new versions starting at
 `new` (including from `verified`), partial-index behaviour on duplicate pending invites, the
