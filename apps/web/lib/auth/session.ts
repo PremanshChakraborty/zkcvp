@@ -8,6 +8,7 @@ import { scopedCookieNames } from "./cookies";
 import { developerAuth } from "./developer";
 import { stakeholderAuth } from "./stakeholder";
 import type { DeveloperSession, Session, StakeholderSession } from "./types";
+import { SessionError } from "./session-error";
 
 /**
  * Reads the developer's GitHub access token straight out of the encrypted JWT.
@@ -33,15 +34,7 @@ async function readDeveloperGithubToken(): Promise<string | undefined> {
   return typeof value === "string" && value ? value : undefined;
 }
 
-export class SessionError extends Error {
-  constructor(
-    public readonly status: 401 | 403,
-    message: string,
-  ) {
-    super(message);
-    this.name = "SessionError";
-  }
-}
+export { SessionError };
 
 /**
  * The only place plan 01's authorization matrix is expressed — see

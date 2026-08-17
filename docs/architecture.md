@@ -101,7 +101,25 @@ the developer GitHub sign-in (a real `developers` row carrying the numeric
 `AUTH_SECRET`, `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET` are all populated in
 `apps/web/.env.local`.
 
-Next: **M4 — Requirement management and the stakeholder UI.**
+**M4 is built.** All ten endpoints (`/api/projects` and its subroutes, `/api/requirements/:id`
+and its subroutes), `resolveGithubUser` in `packages/github`, `apps/web/middleware.ts`, and the
+seven stakeholder-facing screens — `/projects`, `/projects/new`, `/projects/[id]`,
+`/projects/[id]/requirements/new`, `/requirements/[id]`, `/requirements/[id]/edit`, and
+`/projects/[id]/members` — are wired against the real Postgres schema and integration-tested.
+
+Known limitation, deliberately unaddressed in M4: nothing in `apps/web` catches a
+`SessionError` or a `ServiceError` thrown from a Server Component, and there is no
+`error.tsx` or `global-error.tsx` anywhere in `apps/web`. Middleware only checks cookie
+presence, so an authenticated developer who is not a stakeholder can navigate to a
+stakeholder-only page such as `/projects/new` and gets Next's generic framework error page
+rather than a designed state. Four Server Actions (`projects/new/actions.ts`,
+`projects/[id]/requirements/new/actions.ts`, `requirements/[id]/edit/actions.ts`,
+`requirements/[id]/actions.ts`) let a thrown `ServiceError` escape the same way. The most
+reachable case needs no role confusion at all: any member opening
+`/requirements/<stale-or-mistyped-id>` gets `ServiceError(404)` from `loadRequirement` and
+the same generic framework error page. The project owner decided not to address this in M4.
+
+Next: **M5 — Remaining checklist screens.**
 
 ---
 
@@ -148,6 +166,9 @@ requireStakeholderMember(projectId): Promise<StakeholderSession>  // 403
 **Middleware carries no authorization** — unauthenticated redirects only. Middleware runs on
 Edge on Vercel and in Node self-hosted; keeping authorization out of it eliminates the largest
 behavioural difference between deployment targets.
+
+`apps/web/middleware.ts` itself is written in **M4**, not here — M3 shipped no page that needed
+a redirect, and the stakeholder screens are its first real consumer.
 
 ### `packages/github` — token funnel only
 
@@ -243,33 +264,109 @@ PATCH  /api/requirements/:id
 DELETE /api/requirements/:id
 ```
 
-Two behaviours carry real concurrency risk:
+### Where the rules live
+
+```
+apps/web/
+├── middleware.ts               cookie-presence redirect to /login. No authorization.
+├── lib/
+│   ├── db.ts                   getDb()
+│   ├── api/errors.ts           ServiceError(status, code, message)
+│   ├── api/respond.ts          ServiceError | SessionError → JSON. The only catch block.
+│   ├── projects/service.ts     createProject, listProjects, getProject,
+│   │                           assertStakeholderMember
+│   ├── projects/members.ts     listMembers, inviteDeveloper
+│   ├── requirements/service.ts createRequirement, listRequirements, getRequirement,
+│   │                           loadRequirement
+│   └── requirements/mutate.ts  editRequirement, archiveRequirement
+├── app/api/…                   ten route handlers, thin JSON adapters
+└── app/(screens)               Server Components + Server Actions
+```
+
+Every service function is shaped `(db, session, args)` and calls the predicates in
+`lib/auth/authorization.ts` itself, throwing `ServiceError(403)`. Route handlers and Server
+Components both call these services; **neither contains a rule**. This is what stops the REST
+path and the Server Component path from diverging — they are the same function.
+
+`requireSession()` remains the cookie boundary — *who is this*. Services answer *may they do
+this*. `requireProjectMember`/`requireStakeholderMember` in `session.ts` are page-level
+conveniences over the same predicates, so each rule still has exactly one implementation.
+
+Uniform error body across all ten endpoints — plan 01 fixes the status codes but not the shape:
+
+```json
+{ "error": { "code": "conflict", "message": "Already a member of this project" } }
+```
+
+`unauthenticated` 401 · `forbidden` 403 · `not_found` 404 · `conflict` 409 ·
+`invalid_body` 400 (Zod issues attached) · `github_unavailable` 503.
+
+### Two behaviours carry real concurrency risk
 
 - **Requirement create** is one transaction: `requirements` row → `requirement_versions` row
-  (`version_number = 1`, `status = 'new'`) → set `current_version_id`.
+  (`version_number = 1`, `status = 'new'`) → set `current_version_id`. The nullable
+  `current_version_id` exists only for the width of this transaction.
 - **Requirement edit** takes `SELECT ... FOR UPDATE` on the parent `requirements` row before
   computing `version_number = max + 1`. Without it, concurrent edits collide on the
   `(requirement_id, version_number)` unique constraint.
+- **Developer invite** does not check-then-insert. The partial unique index on
+  `(project_id, github_user_id) where status = 'pending'` is the arbiter; a duplicate surfaces
+  as a unique violation and is translated to 409.
 
 A new `requirement_versions` row always starts at `status = 'new'` unconditionally (plan 01
 invariant 4) — this is what makes "editing a verified requirement reopens it" fall out with no
-special-case logic. It must not become conditional.
+special-case logic. It must not become conditional. It is written explicitly at the insert
+rather than left to the column default, so the invariant is visible at the line that could
+break it.
 
-When the first `apps/web` code imports `@zkcvp/db` or `@zkcvp/contracts`, add them to
-`apps/web/package.json`'s `dependencies` — they are in `transpilePackages` but currently
-resolve only via workspace hoisting.
+### `resolveGithubUser` is unauthenticated, and that is a rate limit
+
+The caller is a stakeholder, who has no GitHub token, and plan 01 forbids any service-level
+credential — so `GET /users/{username}` goes out unauthenticated, which GitHub caps at **60
+requests/hour per IP, shared by every stakeholder on the deployment**.
+
+A 403/429 carrying `x-ratelimit-remaining: 0` must map to **503 `github_unavailable`**, never
+to 404. Reporting exhaustion as "no such user" would tell a stakeholder something false about
+a real person. This is an infrastructure failure and renders as such — `Alert tone="danger"`,
+never ink.
+
+### Screens
+
+Ledger ships no modal and no pagination, so create and edit are routed pages with inline forms.
+
+| Route | Renders |
+|---|---|
+| `/projects` | project list, `EmptyState` when none |
+| `/projects/new` | name field |
+| `/projects/[id]` | checklist, `ChecklistProgress`, a link to `/projects/[id]/members` |
+| `/projects/[id]/requirements/new` | title + description |
+| `/requirements/[id]` | detail plus version history as a `Timeline` |
+| `/requirements/[id]/edit` | prefilled title + description |
+| `/projects/[id]/members` | members, pending invites, stakeholder-only invite form |
+
+`/projects` and `/projects/[id]` are built role-aware in one pass — stakeholders get the
+create/edit/archive actions, developer members get the same data read-only. Same query, one
+conditional on `session.kind`, no rewrite when M5 lands.
+
+Mutations are Server Actions in `actions.ts` beside each page, following
+`app/login/email/actions.ts`: `requireStakeholder()` → `getDb()` → service → `revalidatePath`
+→ `redirect`. Validation failures return through `useActionState` into `Field`'s `error` prop,
+never a thrown error page.
 
 ---
 
 ## M5 — Remaining checklist screens
 
-Runs with M4 rather than after it; split out here only because the route list is long.
+All seven routes below were delivered during M4, built role-aware from the start rather than
+revisited later (see M4, Screens — `/projects` and `/projects/[id]` share one query with a
+single `session.kind` conditional; `/requirements/[id]` and `/projects/[id]/members` follow the
+same pattern). This table is kept as the role-split reference, not a list of pending work.
 
 | Route | Role | Notes |
 |---|---|---|
 | `/projects` | both | project list |
 | `/projects/new` | stakeholder | |
-| `/projects/[id]` | both | checklist, `ChecklistProgress`, members summary |
+| `/projects/[id]` | both | checklist, `ChecklistProgress`, a link to `/projects/[id]/members` |
 | `/projects/[id]/requirements/new` | stakeholder | routed page, not a dialog |
 | `/requirements/[id]` | both | detail plus version history as a `Timeline` |
 | `/requirements/[id]/edit` | stakeholder | routed page, not a dialog |
@@ -313,13 +410,51 @@ needed.
 
 ## Testing
 
-Vitest, integration-first, against a real Postgres schema created and dropped per run
-(`packages/db/tests/harness.ts`). Handlers are written after their tests.
+Vitest, integration-first, against real Postgres (`packages/db/tests/harness.ts`). Handlers are
+written after their tests. `packages/orchestrator/tests/**` is excluded — a manual script
+needing live GitHub and LLM credentials, not a collectable test file.
 
-Coverage targets invariants that actually break, not line count: transaction atomicity on
-create, concurrent `PATCH` under the row lock, new versions starting at `new`, partial-index
-behaviour on duplicate pending invites, the invite-to-existing-developer branch, every cell of
-plan 01's authorization matrix, and archiving in any status.
+### The harness, and what not to undo
+
+Against a hosted database the whole cost is round trips, and the harness is shaped around them.
+Each piece looks removable until you know why it is there:
+
+- **One schema per test FILE**, memoised in module scope, with `TRUNCATE ... RESTART IDENTITY
+  CASCADE` between tests. A schema per *test* costs ~32 round trips each and took the suite
+  from 90s to 313s.
+- **The migration is one multi-statement query.** Postgres runs semicolon-separated statements
+  in a single round trip when there are no bind parameters, and in an implicit transaction, so
+  a partial failure cannot leave a half-built schema. Check for `CREATE INDEX CONCURRENTLY`,
+  `VACUUM`, or `REINDEX` before relying on it.
+- **Teardown is an `afterAll` from `setupFiles`** (`packages/db/tests/setup.ts`), which runs
+  once per file. Required, not tidiness: the module-level pool keeps the worker's event loop
+  alive and Vitest hangs at exit without it.
+- **The stale-schema sweep is age-gated** on the timestamp in the schema name. Workers sweep
+  concurrently; an ungated sweep drops a sibling worker's live schema mid-test.
+- **Tests within a file run sequentially, and that is load-bearing.** `test.concurrent` would
+  make them share a schema concurrently, and the fixtures' reused emails would collide on the
+  unique index.
+
+Connection errors — `sorry, too many clients already`, `remaining connection slots are reserved
+for roles with the SUPERUSER attribute`, `(EMAXPOOLSREACHED) max pools count reached` — mean
+fixing what the harness opens per file, **not** lowering the worker count, which hides the cause
+and doubles the runtime. `DATABASE_URL` is the Supavisor transaction pooler, which cannot share
+a backend between clients whose startup parameters differ, so a unique `search_path` per
+connection defeats pooling entirely. These arrive as scattered, unrelated-looking test failures
+rather than a resource message, so a green run is the only evidence that counts.
+
+Coverage targets invariants that actually break, not line count: new versions starting at
+`new` (including from `verified`), partial-index behaviour on duplicate pending invites, the
+invite-to-existing-developer branch, every cell of plan 01's authorization matrix, archiving in
+any status, and `resolveGithubUser` mapping a rate-limited response to 503 rather than 404.
+
+Tests live at the service layer, since that is where the rules are — `(db, session, args)`
+functions exercised directly under `withTestSchema`, not over HTTP.
+
+Two mechanisms are implemented but deliberately **not** covered by tests: the `db.transaction`
+in `createRequirement` and the `SELECT ... FOR UPDATE` in `editRequirement`. Both are load-bearing
+(see M4, "Two behaviours carry real concurrency risk") and a regression in either is silent — if
+this suite ever grows, they are the first things to add back.
 
 Two structural guardrails:
 
