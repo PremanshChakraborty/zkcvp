@@ -108,10 +108,16 @@ seven stakeholder-facing screens — `/projects`, `/projects/new`, `/projects/[i
 `/projects/[id]/members` — are wired against the real Postgres schema and integration-tested.
 
 Known limitation, deliberately unaddressed in M4: nothing in `apps/web` catches a
-`SessionError` thrown from a Server Component. Middleware only checks cookie presence, so an
-authenticated developer who is not a stakeholder can navigate to a stakeholder-only page such
-as `/projects/new` and gets Next's generic framework error page rather than a designed state.
-The project owner decided not to address this in M4.
+`SessionError` or a `ServiceError` thrown from a Server Component, and there is no
+`error.tsx` or `global-error.tsx` anywhere in `apps/web`. Middleware only checks cookie
+presence, so an authenticated developer who is not a stakeholder can navigate to a
+stakeholder-only page such as `/projects/new` and gets Next's generic framework error page
+rather than a designed state. Four Server Actions (`projects/new/actions.ts`,
+`projects/[id]/requirements/new/actions.ts`, `requirements/[id]/edit/actions.ts`,
+`requirements/[id]/actions.ts`) let a thrown `ServiceError` escape the same way. The most
+reachable case needs no role confusion at all: any member opening
+`/requirements/<stale-or-mistyped-id>` gets `ServiceError(404)` from `loadRequirement` and
+the same generic framework error page. The project owner decided not to address this in M4.
 
 Next: **M5 — Remaining checklist screens.**
 
@@ -268,9 +274,11 @@ apps/web/
 │   ├── api/errors.ts           ServiceError(status, code, message)
 │   ├── api/respond.ts          ServiceError | SessionError → JSON. The only catch block.
 │   ├── projects/service.ts     createProject, listProjects, getProject,
-│   │                           listMembers, inviteDeveloper
-│   └── requirements/service.ts createRequirement, listRequirements, getRequirement,
-│                               editRequirement, archiveRequirement
+│   │                           assertStakeholderMember
+│   ├── projects/members.ts     listMembers, inviteDeveloper
+│   ├── requirements/service.ts createRequirement, listRequirements, getRequirement,
+│   │                           loadRequirement
+│   └── requirements/mutate.ts  editRequirement, archiveRequirement
 ├── app/api/…                   ten route handlers, thin JSON adapters
 └── app/(screens)               Server Components + Server Actions
 ```
@@ -330,7 +338,7 @@ Ledger ships no modal and no pagination, so create and edit are routed pages wit
 |---|---|
 | `/projects` | project list, `EmptyState` when none |
 | `/projects/new` | name field |
-| `/projects/[id]` | checklist, `ChecklistProgress`, members summary |
+| `/projects/[id]` | checklist, `ChecklistProgress`, a link to `/projects/[id]/members` |
 | `/projects/[id]/requirements/new` | title + description |
 | `/requirements/[id]` | detail plus version history as a `Timeline` |
 | `/requirements/[id]/edit` | prefilled title + description |
@@ -358,7 +366,7 @@ same pattern). This table is kept as the role-split reference, not a list of pen
 |---|---|---|
 | `/projects` | both | project list |
 | `/projects/new` | stakeholder | |
-| `/projects/[id]` | both | checklist, `ChecklistProgress`, members summary |
+| `/projects/[id]` | both | checklist, `ChecklistProgress`, a link to `/projects/[id]/members` |
 | `/projects/[id]/requirements/new` | stakeholder | routed page, not a dialog |
 | `/requirements/[id]` | both | detail plus version history as a `Timeline` |
 | `/requirements/[id]/edit` | stakeholder | routed page, not a dialog |

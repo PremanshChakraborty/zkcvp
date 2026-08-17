@@ -36,12 +36,23 @@ export default defineConfig({
      *
      * Measured against this project's Supabase instance, not guessed:
      *
-     *   workers │ result │ connection errors │ wall
-     *   ────────┼────────┼───────────────────┼──────
-     *      6    │ 64/96  │ many              │  93s
-     *      3    │ 64/96  │ many              │ 138s
-     *      2    │ 94/96  │ NONE              │ 336s
-     *      1    │ 93/93  │ none              │ 680s
+     *   workers │ result       │ connection errors │ wall
+     *   ────────┼──────────────┼───────────────────┼──────
+     *      6    │ 64/96        │ many              │  93s
+     *      3    │ 64/96        │ many              │ 138s
+     *      2    │ 96/96        │ NONE              │ 327s
+     *      2    │ 96/96        │ NONE              │ 340s
+     *      1    │ 93/93 *      │ none              │ 680s
+     *
+     * (* the 1-worker run predated the orchestrator exclude added above, so it
+     * collected fewer files — 93 is a different denominator, not a worse
+     * result. Not directly comparable to the 96-test rows.)
+     *
+     * A run at maxWorkers: 2 occasionally shows one or two failures as
+     * ECONNRESET against the database (seen once, at 94/96); that is transient
+     * network flakiness between this machine and the hosted Postgres instance,
+     * not a capacity signal — a re-run at the same setting passes clean, as the
+     * two rows above show.
      *
      * Over-subscribing fails as "sorry, too many clients already", "remaining
      * connection slots are reserved for roles with the SUPERUSER attribute",
