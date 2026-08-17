@@ -410,13 +410,38 @@ needed.
 
 ## Testing
 
-Vitest, integration-first, against a real Postgres schema created and dropped per run
-(`packages/db/tests/harness.ts`). Handlers are written after their tests.
+Vitest, integration-first, against real Postgres (`packages/db/tests/harness.ts`). Handlers are
+written after their tests. `packages/orchestrator/tests/**` is excluded — a manual script
+needing live GitHub and LLM credentials, not a collectable test file.
 
-`vitest.config.ts` caps `maxWorkers` at 2: each `withTestSchema` call opens its own pools, and
-the project's Postgres instance has a low connection ceiling — the config file carries the
-measured runs behind that number. `packages/orchestrator/tests/**` is excluded from the suite;
-it is a manual script that needs live GitHub and LLM credentials, not a collectable test file.
+### The harness, and what not to undo
+
+Against a hosted database the whole cost is round trips, and the harness is shaped around them.
+Each piece looks removable until you know why it is there:
+
+- **One schema per test FILE**, memoised in module scope, with `TRUNCATE ... RESTART IDENTITY
+  CASCADE` between tests. A schema per *test* costs ~32 round trips each and took the suite
+  from 90s to 313s.
+- **The migration is one multi-statement query.** Postgres runs semicolon-separated statements
+  in a single round trip when there are no bind parameters, and in an implicit transaction, so
+  a partial failure cannot leave a half-built schema. Check for `CREATE INDEX CONCURRENTLY`,
+  `VACUUM`, or `REINDEX` before relying on it.
+- **Teardown is an `afterAll` from `setupFiles`** (`packages/db/tests/setup.ts`), which runs
+  once per file. Required, not tidiness: the module-level pool keeps the worker's event loop
+  alive and Vitest hangs at exit without it.
+- **The stale-schema sweep is age-gated** on the timestamp in the schema name. Workers sweep
+  concurrently; an ungated sweep drops a sibling worker's live schema mid-test.
+- **Tests within a file run sequentially, and that is load-bearing.** `test.concurrent` would
+  make them share a schema concurrently, and the fixtures' reused emails would collide on the
+  unique index.
+
+Connection errors — `sorry, too many clients already`, `remaining connection slots are reserved
+for roles with the SUPERUSER attribute`, `(EMAXPOOLSREACHED) max pools count reached` — mean
+fixing what the harness opens per file, **not** lowering the worker count, which hides the cause
+and doubles the runtime. `DATABASE_URL` is the Supavisor transaction pooler, which cannot share
+a backend between clients whose startup parameters differ, so a unique `search_path` per
+connection defeats pooling entirely. These arrive as scattered, unrelated-looking test failures
+rather than a resource message, so a green run is the only evidence that counts.
 
 Coverage targets invariants that actually break, not line count: new versions starting at
 `new` (including from `verified`), partial-index behaviour on duplicate pending invites, the
