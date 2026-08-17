@@ -14,103 +14,189 @@ import type { Db } from "../src/client";
  */
 export type TestDb = Db;
 
+/** How long a schema may linger before a later run treats it as abandoned. */
+const STALE_AFTER_MS = 60 * 60 * 1000;
+
+type Shared = {
+  name: string;
+  pool: pg.Pool;
+  db: TestDb;
+  /** Built once from the schema's real table list. */
+  truncateSql: string;
+};
+
 /**
- * Runs a test against a private, uniquely-named schema inside the ONE Supabase
- * project, then drops it.
+ * ONE schema per test FILE, not per test.
  *
- * Schema-per-run rather than database-per-run: creating databases needs
- * privileges a pooled Supabase connection does not have, and schema isolation
- * gives the same guarantee — parallel runs and reruns cannot see each other's
- * rows, and nothing accumulates. It also means no second project and no Docker.
+ * Vitest parallelises by file and runs the tests inside a file sequentially
+ * (nothing here opts into `test.concurrent`), and with `isolate: true` each
+ * file gets a fresh module registry — so this module-level value is naturally
+ * scoped to exactly one file. Tests inside that file share the schema and are
+ * separated by TRUNCATE instead.
+ */
+let shared: Shared | undefined;
+
+function requireUrl(): string {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL is required to run database tests");
+  return url;
+}
+
+/** Short-lived single connection for DDL that must not run inside the run's schema. */
+async function withAdmin<T>(
+  url: string,
+  fn: (client: pg.Client) => Promise<T>,
+): Promise<T> {
+  const client = new pg.Client({ connectionString: url });
+  await client.connect();
+  try {
+    return await fn(client);
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * Drops schemas abandoned by a killed run.
  *
- * Each call gets its own Pool, NOT the memoised one from src/client.ts, because
- * `search_path` is per-connection and a shared pool would leak it across tests.
+ * Age-gated on the timestamp embedded in the name, because several workers do
+ * this concurrently and each one's own schema is seconds old — an ungated sweep
+ * would delete a sibling worker's live schema mid-test.
+ */
+async function dropStaleSchemas(client: pg.Client): Promise<void> {
+  const cutoff = Date.now() - STALE_AFTER_MS;
+  const { rows } = await client.query<{ nspname: string }>(
+    `SELECT nspname FROM pg_namespace WHERE nspname LIKE 'test\\_%'`,
+  );
+
+  for (const { nspname } of rows) {
+    const createdAt = Number(nspname.split("_")[1]);
+    if (!Number.isFinite(createdAt) || createdAt >= cutoff) continue;
+    /* Another worker may be sweeping the same schema; losing that race is fine. */
+    await client
+      .query(`DROP SCHEMA IF EXISTS "${nspname}" CASCADE`)
+      .catch(() => undefined);
+  }
+}
+
+function migrationSql(schemaName: string): string {
+  const dir = fileURLToPath(new URL("../migrations", import.meta.url));
+  return readdirSync(dir)
+    .filter((f) => f.endsWith(".sql"))
+    .sort()
+    .map((file) => readFileSync(`${dir}/${file}`, "utf8"))
+    .join("\n")
+    /* drizzle-kit always fully qualifies CREATE TYPE as `"public"."..."`, and
+     * Postgres has no CREATE TYPE ... IF NOT EXISTS — so the enums must be
+     * rewritten into this run's schema the way search_path already scopes the
+     * (unqualified) tables. */
+    .replaceAll('"public".', `"${schemaName}".`)
+    /* The breakpoints exist for drizzle's own migrator. Sending the whole file
+     * as ONE simple query executes every statement in a single round trip and
+     * in one implicit transaction, so a partial failure cannot leave a
+     * half-built schema. Safe only because this migration contains nothing that
+     * refuses to run inside a transaction (CREATE INDEX CONCURRENTLY, VACUUM). */
+    .replaceAll("--> statement-breakpoint", "");
+}
+
+async function ensureSchema(): Promise<{ shared: Shared; created: boolean }> {
+  if (shared) return { shared, created: false };
+
+  const url = requireUrl();
+  /* Name is built from a timestamp and Math.random, never from input, so
+   * interpolating it is safe. Postgres has no bind parameter for an identifier,
+   * so there is no parameterised alternative. */
+  const name = `test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+  await withAdmin(url, async (client) => {
+    await dropStaleSchemas(client);
+    await client.query(`CREATE SCHEMA "${name}"`);
+  });
+
+  const pool = new pg.Pool({
+    connectionString: url,
+    max: 2,
+    options: `-c search_path="${name}"`,
+  });
+
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query(migrationSql(name));
+
+      const { rows } = await client.query<{ tablename: string }>(
+        `SELECT tablename FROM pg_tables WHERE schemaname = $1`,
+        [name],
+      );
+      const tables = rows.map((r) => `"${name}"."${r.tablename}"`).join(", ");
+
+      const built: Shared = {
+        name,
+        pool,
+        db: drizzle(pool, { schema }),
+        /* One statement, one round trip, whatever the table count. CASCADE
+         * because the tables reference each other; RESTART IDENTITY so nothing
+         * carries over in any future sequence-backed column. */
+        truncateSql: `TRUNCATE TABLE ${tables} RESTART IDENTITY CASCADE`,
+      };
+      shared = built;
+      return { shared: built, created: true };
+    } finally {
+      client.release();
+    }
+  } catch (e) {
+    await pool.end();
+    await withAdmin(url, (client) =>
+      client.query(`DROP SCHEMA IF EXISTS "${name}" CASCADE`),
+    ).catch(() => undefined);
+    throw e;
+  }
+}
+
+/**
+ * Runs a test against this file's private schema, emptied first.
  *
- * DEVIATION FROM THE ORIGINAL BRIEF, discovered by running against the real
- * database (not reasoned in the abstract): the brief's original implementation
- * used `drizzle-orm/node-postgres/migrator`'s `migrate()` with a
- * `migrationsSchema` option, on the assumption that a `search_path`
- * connection-parameter (or, as a fallback, a `pool.on("connect", ...)`
- * handler) would make the migration's DDL land in the per-run schema.
+ * Isolation is per TEST — every call starts from empty tables — but the schema
+ * itself is built once per file. The previous design created and migrated a
+ * fresh schema for every call, which cost ~32 round trips per test; against a
+ * hosted database that dominated the suite's runtime. It also gave every
+ * connection a distinct `search_path` startup parameter, which Supavisor cannot
+ * pool across, so pool count grew with the test count until the pooler refused
+ * new ones ("max pools count reached"). A stable search_path per file fixes
+ * both at once.
  *
- * That assumption held for search_path itself — verified directly against
- * this Supabase pooler: both the `-c search_path=...` connection option and a
- * `pool.on("connect", ...)` handler correctly scope unqualified statements
- * (e.g. `CREATE TABLE developers (...)`) to the per-run schema. It did NOT
- * hold for `migrate()` as a whole, because `migrationsSchema` only controls
- * where the `__drizzle_migrations` tracking table lives — it does not rewrite
- * the migration's own SQL. drizzle-kit always fully schema-qualifies
- * `CREATE TYPE` statements (this project's migration reads literally
- * `CREATE TYPE "public"."invite_status" ...`), and Postgres has no
- * `CREATE TYPE ... IF NOT EXISTS`. So the very first `withTestSchema` call
- * after the real migration is applied to `public` (Task 13 Step 1) fails with
- * `type "invite_status" already exists` — deterministically, regardless of
- * search_path, and independent of the Supabase pooler.
- *
- * Fix: read the migration file(s) directly and execute their statements after
- * rewriting the literal `"public".` qualifier to this run's schema name, so
- * the enum types get the same per-run isolation the (unqualified) tables
- * already get via `search_path`. This intentionally does not use `migrate()`
- * or the `__drizzle_migrations` tracking table — each schema is created fresh
- * and dropped after exactly one use, so migration history has nothing to
- * track.
+ * What this does NOT do is isolate tests from each other *concurrently*. Tests
+ * inside a file run sequentially, so TRUNCATE between them is sufficient. Do not
+ * add `test.concurrent` to a database test file without revisiting this — two
+ * concurrent tests would share a schema and collide on the fixtures' reused
+ * unique emails.
  */
 export async function withTestSchema<T>(
   fn: (db: TestDb) => Promise<T>,
 ): Promise<T> {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL is required to run database tests");
+  const { shared: s, created } = await ensureSchema();
 
-  const name = `test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const admin = new pg.Pool({ connectionString: url, max: 1 });
+  /* Skipped only on the call that just built the schema — its tables are
+   * already empty and TRUNCATE would be a wasted round trip. */
+  if (!created) await s.pool.query(s.truncateSql);
 
-  try {
-    await admin.query(`CREATE SCHEMA "${name}"`);
+  return fn(s.db);
+}
 
-    const pool = new pg.Pool({
-      connectionString: url,
-      max: 2,
-      options: `-c search_path="${name}"`,
-    });
-    try {
-      const migrationsDir = fileURLToPath(
-        new URL("../migrations", import.meta.url),
-      );
-      const sqlFiles = readdirSync(migrationsDir)
-        .filter((f) => f.endsWith(".sql"))
-        .sort();
+/**
+ * Drops this file's schema and closes its pool.
+ *
+ * Called from an `afterAll` in the Vitest setup file, which runs once per test
+ * file. Without it the module-level pool would keep the worker's event loop
+ * alive and Vitest would hang at exit.
+ */
+export async function releaseTestSchema(): Promise<void> {
+  if (!shared) return;
+  const { name, pool } = shared;
+  shared = undefined;
 
-      const client = await pool.connect();
-      try {
-        for (const file of sqlFiles) {
-          const raw = readFileSync(`${migrationsDir}/${file}`, "utf8");
-          /* Rewrite the hardcoded `public` schema qualifier (drizzle-kit
-           * always emits one for CREATE TYPE) to this run's private schema,
-           * so enum types get isolated the same way the unqualified tables
-           * already are via search_path. */
-          const rewritten = raw.replaceAll('"public".', `"${name}".`);
-          const statements = rewritten
-            .split("--> statement-breakpoint")
-            .map((s) => s.trim())
-            .filter(Boolean);
-          for (const statement of statements) {
-            await client.query(statement);
-          }
-        }
-      } finally {
-        client.release();
-      }
-
-      const db = drizzle(pool, { schema });
-      return await fn(db);
-    } finally {
-      await pool.end();
-    }
-  } finally {
-    /* `name` is generated here from a timestamp and Math.random, never from
-     * input, so interpolating it is safe. Postgres has no bind parameter for an
-     * identifier, so there is no parameterised alternative. */
-    await admin.query(`DROP SCHEMA IF EXISTS "${name}" CASCADE`);
-    await admin.end();
-  }
+  await pool.end();
+  await withAdmin(requireUrl(), (client) =>
+    client.query(`DROP SCHEMA IF EXISTS "${name}" CASCADE`),
+  );
 }

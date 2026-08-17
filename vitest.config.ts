@@ -22,50 +22,40 @@ export default defineConfig({
       "packages/orchestrator/tests/**",
     ],
 
-    /* Caps how many test FILES run at once. This is a Postgres connection
-     * budget, not a CPU one.
+    /* Drops each test file's database schema and closes its pool when the file
+     * finishes. Required, not bookkeeping: the harness holds a pg.Pool in module
+     * scope, and an open pool keeps the worker's event loop alive — without this
+     * Vitest hangs at exit. Harmless for the files that never touch a database. */
+    setupFiles: ["./packages/db/tests/setup.ts"],
+
+    /* File parallelism is deliberately UNCAPPED, and that is only safe because
+     * of how packages/db/tests/harness.ts is written. Read this before adding a
+     * cap back.
      *
-     * Every `withTestSchema` call opens its own pools rather than sharing the
-     * memoised client — `search_path` is per-connection, so a shared pool would
-     * leak one test's schema into another (see packages/db/tests/harness.ts).
-     * That costs ~3 connections per in-flight file (admin max:1 + pool max:2).
-     * Unbounded, ~18 files ask for ~54 at once and Postgres answers
-     * "sorry, too many clients already" / "remaining connection slots are
-     * reserved for roles with the SUPERUSER attribute" — which looks like a
-     * dozen unrelated test failures rather than a resource limit.
+     * The harness builds one schema per test FILE and separates the tests inside
+     * it with TRUNCATE. So the database cost is one small pool (max 2) per
+     * in-flight file — roughly 18 connections across the 9 files that touch the
+     * database — and it is flat: it does not grow with the test count.
      *
-     * Measured against this project's Supabase instance, not guessed:
+     * It used to. An earlier harness created a fresh schema per TEST, which gave
+     * every connection a distinct `search_path` startup parameter. Supavisor
+     * cannot share a backend between clients whose startup parameters differ, so
+     * pool count grew with the test count until the pooler refused new ones. That
+     * forced maxWorkers down to 2, and the measurements were:
      *
-     *   workers │ result       │ connection errors │ wall
-     *   ────────┼──────────────┼───────────────────┼──────
-     *      6    │ 64/96        │ many              │  93s
-     *      3    │ 64/96        │ many              │ 138s
-     *      2    │ 96/96        │ NONE              │ 327s
-     *      2    │ 96/96        │ NONE              │ 340s
-     *      1    │ 93/93 *      │ none              │ 680s
+     *   workers │ result │ connection errors │ wall
+     *   ────────┼────────┼───────────────────┼──────
+     *      6    │ 64/96  │ many              │  93s
+     *      3    │ 64/96  │ many              │ 138s
+     *      2    │ 96/96  │ NONE              │ 327s
      *
-     * (* the 1-worker run predated the orchestrator exclude added above, so it
-     * collected fewer files — 93 is a different denominator, not a worse
-     * result. Not directly comparable to the 96-test rows.)
+     * Note what that table shows: MORE workers looked faster while failing. The
+     * failures arrive as a dozen scattered, unrelated-looking test errors rather
+     * than an obvious resource message, so a green run is the only evidence that
+     * counts here. Switching the endpoint from the transaction pooler (:6543) to
+     * session mode (:5432) was tried and changed nothing.
      *
-     * A run at maxWorkers: 2 occasionally shows one or two failures as
-     * ECONNRESET against the database (seen once, at 94/96); that is transient
-     * network flakiness between this machine and the hosted Postgres instance,
-     * not a capacity signal — a re-run at the same setting passes clean, as the
-     * two rows above show.
-     *
-     * Over-subscribing fails as "sorry, too many clients already", "remaining
-     * connection slots are reserved for roles with the SUPERUSER attribute",
-     * and Supavisor's "(EMAXPOOLSREACHED) max pools count reached" — note the
-     * pooler caps the NUMBER OF POOLS, so the real budget is tighter than a raw
-     * connection count predicts. Switching the endpoint from the transaction
-     * pooler (:6543) to session mode (:5432) was tried and does NOT change this.
-     *
-     * It fails as a dozen scattered, unrelated-looking test failures rather
-     * than an obvious resource message, so raise this ONLY with a measured run
-     * behind you. Two is the ceiling this instance sustains; a larger database
-     * would allow more. Do NOT solve it by turning file parallelism off —
-     * that doubles the wall time again for no benefit. */
-    maxWorkers: 2,
+     * If connection errors ever return, the fix is to look at what the harness
+     * opens per file — capping workers only hides it. */
   },
 });
