@@ -74,10 +74,7 @@ export default async function RequirementPage({
                   Edit
                 </Button>
               </Link>
-              <ArchiveButton
-                requirementId={id}
-                projectId={requirement.projectId}
-              />
+              <ArchiveButton requirementId={id} />
             </>
           ) : undefined
         }

@@ -26,13 +26,11 @@ function SubmitButton() {
  */
 export function ArchiveButton({
   requirementId,
-  projectId,
 }: {
   requirementId: string;
-  projectId: string;
 }) {
   return (
-    <form action={archiveRequirementAction.bind(null, requirementId, projectId)}>
+    <form action={archiveRequirementAction.bind(null, requirementId)}>
       <SubmitButton />
     </form>
   );

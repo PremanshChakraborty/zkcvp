@@ -58,6 +58,12 @@ export async function resolveGithubUser(username: string): Promise<GithubUser> {
           Accept: "application/vnd.github+json",
           "X-GitHub-Api-Version": "2022-11-28",
         },
+        /* A hung connection to GitHub would otherwise hold a stakeholder's
+         * request open indefinitely. The catch below maps this — like every
+         * other fetch failure — to GithubUnavailable, never to
+         * GithubUserNotFound: a timeout says nothing about whether the user
+         * exists. */
+        signal: AbortSignal.timeout(10_000),
       },
     );
   } catch (e) {

@@ -39,8 +39,15 @@ export async function editRequirementAction(
   /* Both fields are always sent, so both are passed. `editRequirement` treats
    * an omitted key as "carry the previous version's text forward", which is not
    * what an emptied control means. */
-  await editRequirement(getDb(), session, requirementId, { title, description });
+  const updated = await editRequirement(getDb(), session, requirementId, {
+    title,
+    description,
+  });
 
+  /* The project checklist renders the title, description, and version number
+   * that just changed, so it is stale too — same pattern as
+   * archiveRequirementAction, which revalidates both affected routes. */
+  revalidatePath(`/projects/${updated.projectId}`);
   revalidatePath(`/requirements/${requirementId}`);
   /* redirect() throws a control-flow signal — it must be outside any try. */
   redirect(`/requirements/${requirementId}`);

@@ -71,4 +71,22 @@ describe("resolveGithubUser", () => {
     stubFetch(new Response("", { status: 502 }));
     await expect(resolveGithubUser("b")).rejects.toBeInstanceOf(GithubUnavailable);
   });
+
+  /* A hung connection must not hold a stakeholder's request open forever, and
+   * a timeout must never be mistaken for "no such user" — that would state
+   * something false about a real person. `fetch` rejects with an abort
+   * DOMException when the request's `signal` fires; simulate that directly
+   * rather than actually waiting out the real 10s timeout. */
+  it("throws GithubUnavailable — not NotFound — when the request times out", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new DOMException("The operation was aborted.", "TimeoutError");
+      }),
+    );
+
+    const err = await resolveGithubUser("octocat").catch((e) => e);
+    expect(err).toBeInstanceOf(GithubUnavailable);
+    expect(err).not.toBeInstanceOf(GithubUserNotFound);
+  });
 });

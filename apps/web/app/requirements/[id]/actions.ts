@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "../../../lib/db";
 import { requireStakeholder } from "../../../lib/auth/session";
 import { archiveRequirement } from "../../../lib/requirements/mutate";
+import { loadRequirement } from "../../../lib/requirements/service";
 
 /**
  * Soft delete. `archiveRequirement` has no status-based precondition — a
@@ -14,10 +15,15 @@ import { archiveRequirement } from "../../../lib/requirements/mutate";
  */
 export async function archiveRequirementAction(
   requirementId: string,
-  projectId: string,
 ): Promise<void> {
   const session = await requireStakeholder();
-  await archiveRequirement(getDb(), session, requirementId);
+  const db = getDb();
+  /* projectId is derived here rather than accepted from the caller: a bound
+   * Server Action argument is client-supplied and unauthorized. This is the
+   * same lookup archiveRequirement performs internally to find the row to
+   * lock, not a second source of truth. */
+  const { projectId } = await loadRequirement(db, requirementId);
+  await archiveRequirement(db, session, requirementId);
 
   /* The checklist drops the row, and the requirement's own page loses its edit
    * and archive affordances, so both are stale. */

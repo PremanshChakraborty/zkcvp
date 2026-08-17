@@ -134,7 +134,12 @@ export async function inviteDeveloper(
         membership: {
           developerId: existing.id,
           githubUserId: existing.githubUserId,
-          githubUsername: existing.githubUsername,
+          /* The freshly-resolved `user.githubUsername`, not the cached
+           * `existing.githubUsername` — the cache is only refreshed at that
+           * developer's next login, so a rename since then would otherwise be
+           * echoed back under their old handle. The cached column itself is
+           * left untouched here; that refresh is out of scope. */
+          githubUsername: user.githubUsername,
           displayName: existing.displayName,
           avatarUrl: existing.avatarUrl,
           addedAt: row.addedAt,
