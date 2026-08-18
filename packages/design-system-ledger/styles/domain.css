@@ -116,9 +116,12 @@
   background: var(--lg-satisfied);
   border-color: var(--lg-satisfied);
 }
+/* `--lg-unsatisfied`, not `-solid`, for parity with the verified mark above:
+   both marks are 8px, and dark mode's `-solid` red is a deep fill meant to sit
+   under white text, which on a dark track would all but disappear. */
 .lg-checklist-progress__seg[data-status="eval_failed"] {
-  background: var(--lg-unsatisfied-solid);
-  border-color: var(--lg-unsatisfied-solid);
+  background: var(--lg-unsatisfied);
+  border-color: var(--lg-unsatisfied);
 }
 .lg-checklist-progress__seg[data-status="archived"] {
   background: transparent;

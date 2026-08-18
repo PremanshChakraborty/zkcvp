@@ -71,8 +71,13 @@ const checks: Array<[string, boolean]> = [
   // eval_failed is a negative verdict, not a malfunction.
   ["status chips say 'Not satisfied'", chipText.includes("Not satisfied")],
   ["no status chip leaks a raw enum name", !/eval_failed|not_satisfied/.test(chipText)],
-  ["negative verdict uses the solid ink chip", doc.includes("lg-chip--unsatisfied")],
-  ["negative verdict never uses the danger chip for a verdict", !/lg-chip--danger[^>]*>[^<]*Not satisfied/.test(doc)],
+  ["negative verdict has its own chip class", doc.includes("lg-chip--unsatisfied")],
+  /* `unsatisfied` and `danger` share a red now, so this no longer separates two
+     hues — it keeps the two CLASSES apart. That is what lets a verdict and a
+     failure be re-separated later without hunting for which red meant which,
+     and it is why a failure must never be marked up as a verdict on the way to
+     looking the same. */
+  ["a failure is never marked up as a verdict", !/lg-chip--danger[^>]*>[^<]*Not satisfied/.test(doc)],
 
   // new is an absence of information, not a caution.
   ["status new renders as 'Not evaluated'", chipText.includes("Not evaluated")],

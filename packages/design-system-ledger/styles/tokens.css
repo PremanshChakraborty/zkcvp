@@ -64,45 +64,66 @@
   --lg-text-faint: #9a9a94;
 
   /* ---------------------------------------------------------------------------
-     Accent — ink blue. Interactive affordances only: primary actions, links,
-     focus, active nav, selected tab. Deliberately outside the verdict family so
-     it can never be mistaken for a result.
+     Accent — ink fill, blue label. Interactive affordances only: primary
+     actions, links, focus, active nav, selected tab. Outside the verdict family
+     so it can never be mistaken for a result.
 
-     Two tokens exist because a fill and a label have different contrast needs,
-     but in LIGHT they hold the same value: #1746c9 clears 7.6:1 both as text on
-     paper and as a fill under white text. Only dark mode has to split them.
-     (The amber accent in the first direction had to split in both themes — that
-     is a property of amber, not a rule of the system.)
+     The two tokens now hold DIFFERENT values in both themes, and the split is
+     the point rather than a contrast workaround:
+
+       --lg-accent-solid   ink. Primary buttons, checked boxes, progress fills.
+       --lg-accent         blue. Links, icons, focus rings.
+
+     A filled action is the loudest thing on a screen, and ink is the only
+     value that carries that weight without spending a hue — which matters
+     because every hue in this system already means something. Blue stays on
+     the label role, where a link has to look like a link and a focus ring has
+     to be distinguishable from the control it sits on.
+
+     The cost is real and is paid in two places: the checkbox needs a tick
+     glyph per theme (see --lg-icon-check), and `unsatisfied` had to leave ink
+     to make room. Both are recorded where they land.
      --------------------------------------------------------------------------- */
-  --lg-accent: #1746c9; /* text, icons, links */
-  --lg-accent-solid: #1746c9; /* filled backgrounds */
-  --lg-accent-hover: #123aa8;
-  --lg-accent-active: #0e2f8c;
+  --lg-accent: #1746c9; /* text, icons, links — still blue */
+  --lg-accent-solid: #131312; /* filled backgrounds — ink */
+  --lg-accent-hover: #2f2f2b;
+  --lg-accent-active: #43433e;
   --lg-accent-subtle: rgba(23, 70, 201, 0.08);
   --lg-accent-rule: rgba(23, 70, 201, 0.34);
   --lg-on-accent: #ffffff;
 
   /* ---------------------------------------------------------------------------
-     Verdict semantics — never colour alone, and never the same hue twice.
+     Verdict semantics — never colour alone.
 
      Four meanings that must stay apart:
 
        satisfied     green   the Evaluator returned satisfied
-       unsatisfied   INK     the Evaluator returned NOT satisfied — a real result
+       unsatisfied   red     the Evaluator returned NOT satisfied — a real result
        danger        red     a true error: rate limit, crash, blown ceiling
        new           grey    never evaluated — an absence, not a caution
 
-     `unsatisfied` is rendered as a SOLID INK chip rather than given a hue, and
-     that is the central colour decision in this direction. Three reasons:
+     `unsatisfied` and `danger` deliberately share one red. Two near-identical
+     reds meaning opposite kinds of thing is harder to read than one red
+     meaning "negative", so the pair is separated by WEIGHT instead:
 
-       1. It cannot be misread as an error. There is no hue to sit near red.
-       2. It survives greyscale and colour-blind rendering without relying on
-          the text label as the only differentiator.
-       3. It is honest about weight. A negative verdict is the most emphatic
-          recorded fact on the page, so it is set in ink, not in a soft pastel.
+       a verdict   is a tinted outline chip, built exactly like `satisfied`
+       a failure   is a bordered alert panel, or red text under a field
 
-     `new` stays hollow and quiet, so "recorded negative" and "never assessed"
-     read as opposites at a glance instead of as two similar cool greys.
+     Nothing red is a solid fill. That rule is what keeps the two legible side
+     by side, and it is why Archive is `neutral` rather than `danger` — a
+     filled red button next to a red chip was the one place they collided.
+
+     A verdict now reads as a matched pair: green chip and red chip, same
+     construction, opposite conclusions. `new` stays hollow and grey, so
+     "recorded negative" and "never assessed" remain opposites at a glance.
+
+     What this gives up, honestly: ink survived greyscale and colour-blind
+     rendering on lightness alone. Red does not — it separates from green on
+     hue, and under deuteranopia both shift. The system's own rule covers it,
+     since every chip carries a glyph and a label and colour is never the only
+     carrier, but the guarantee is weaker than it was. Note that `satisfied`
+     and `danger` already had identical relative luminance, so greyscale was
+     never separating those two either.
      --------------------------------------------------------------------------- */
 
   /* satisfied — status 'verified', verdict 'satisfied' */
@@ -113,11 +134,17 @@
   --lg-on-satisfied: #ffffff;
 
   /* unsatisfied — status 'eval_failed', verdict 'not_satisfied'.
-     A legitimate negative verdict. NOT an error. */
-  --lg-unsatisfied: #131312;
-  --lg-unsatisfied-solid: #131312;
-  --lg-unsatisfied-subtle: rgba(19, 19, 18, 0.07);
-  --lg-unsatisfied-rule: rgba(19, 19, 18, 0.28);
+     A legitimate negative verdict, and now the same red as `danger`.
+
+     One red rather than two near-identical ones: two reds meaning different
+     kinds of thing is harder to read than one red meaning "negative", and the
+     separation is carried by WEIGHT instead. A verdict is a tinted outline
+     chip, matching `satisfied`; a failure is a bordered alert panel. Nothing
+     red is a solid fill any more — see the note on `danger`. */
+  --lg-unsatisfied: #b3261e;
+  --lg-unsatisfied-solid: #b3261e;
+  --lg-unsatisfied-subtle: rgba(179, 38, 30, 0.08);
+  --lg-unsatisfied-rule: rgba(179, 38, 30, 0.3);
   --lg-on-unsatisfied: #ffffff;
 
   /* danger — true errors only, and irreversible destructive actions.
@@ -188,9 +215,11 @@
   --lg-status-verified-subtle: var(--lg-satisfied-subtle);
   --lg-status-verified-rule: var(--lg-satisfied-rule);
 
+  /* subtle/rule rather than solid twice over: eval_failed is a hue chip now,
+     built like verified rather than like a filled badge. */
   --lg-status-eval-failed: var(--lg-unsatisfied);
-  --lg-status-eval-failed-subtle: var(--lg-unsatisfied-solid);
-  --lg-status-eval-failed-rule: var(--lg-unsatisfied-solid);
+  --lg-status-eval-failed-subtle: var(--lg-unsatisfied-subtle);
+  --lg-status-eval-failed-rule: var(--lg-unsatisfied-rule);
 
   --lg-status-error: var(--lg-danger);
   --lg-status-error-subtle: var(--lg-danger-subtle);
@@ -204,11 +233,16 @@
      Checkbox tick. A data URI cannot read a custom property, so the colour is
      baked in and this file is the one place a literal value is allowed.
 
-     White, in both themes, because both themes fill a checked box with a blue
-     that clears 5:1 under white. The amber direction could not do this — white
-     on amber computes to about 2:1 and fails WCAG 1.4.11, so it had to bake a
-     near-black tick instead. One glyph here rather than two is a downstream
-     consequence of the accent choice.
+     TWO glyphs, one per theme, because the accent fills ink. Light mode fills
+     the box near-black and takes the white tick; dark mode fills it near-white
+     and needs an ink one. A single white tick would be invisible on the dark
+     theme's fill.
+
+     This is the cost the blue accent used to avoid, recorded here because it
+     is easy to reintroduce: any accent that is light in either theme needs a
+     matching pair. (The earlier amber direction paid the same price for a
+     different reason — white on amber computes to about 2:1 and fails WCAG
+     1.4.11, so it too had to bake a near-black tick.)
      --------------------------------------------------------------------------- */
   --lg-icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.4 6.3l2.3 2.3 4.9-5' fill='none' stroke='%23ffffff' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   --lg-icon-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6h6' fill='none' stroke='%23ffffff' stroke-width='1.9' stroke-linecap='round'/%3E%3C/svg%3E");
@@ -396,12 +430,12 @@
     /* Here the two accent roles must diverge: the label needs a light blue, the
        fill needs a mid blue that white can sit on. */
     --lg-accent: #8fabff;
-    --lg-accent-solid: #2f5fe0;
-    --lg-accent-hover: #4370ea;
-    --lg-accent-active: #2450c4;
+    --lg-accent-solid: #eaeae5;
+    --lg-accent-hover: #d5d5d0;
+    --lg-accent-active: #c2c2bd;
     --lg-accent-subtle: rgba(143, 171, 255, 0.13);
     --lg-accent-rule: rgba(143, 171, 255, 0.36);
-    --lg-on-accent: #ffffff;
+    --lg-on-accent: #131312;
 
     --lg-satisfied: #3fcf95;
     --lg-satisfied-solid: #0f7a50;
@@ -409,14 +443,19 @@
     --lg-satisfied-rule: rgba(63, 207, 149, 0.32);
     --lg-on-satisfied: #ffffff;
 
-    /* Ink inverts to paper. A near-white chip is still the most emphatic thing
-       on a dark page, which is the intent — and it cannot be confused with the
-       accent, which fills blue. */
-    --lg-unsatisfied: #eaeae5;
-    --lg-unsatisfied-solid: #eaeae5;
-    --lg-unsatisfied-subtle: rgba(234, 234, 229, 0.1);
-    --lg-unsatisfied-rule: rgba(234, 234, 229, 0.32);
-    --lg-on-unsatisfied: #131312;
+    /* Same red as danger, at the same values. The verdict and the failure are
+       told apart by weight rather than hue — a tinted chip against a bordered
+       alert panel — which is what frees ink for the primary action. */
+    --lg-unsatisfied: #f08a80;
+    --lg-unsatisfied-solid: #a8231b;
+    --lg-unsatisfied-subtle: rgba(240, 138, 128, 0.13);
+    --lg-unsatisfied-rule: rgba(240, 138, 128, 0.32);
+    --lg-on-unsatisfied: #ffffff;
+
+    /* Ink glyphs — the dark theme fills the box near-white. See the note in
+       the light block above. */
+    --lg-icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.4 6.3l2.3 2.3 4.9-5' fill='none' stroke='%23131312' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --lg-icon-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6h6' fill='none' stroke='%23131312' stroke-width='1.9' stroke-linecap='round'/%3E%3C/svg%3E");
 
     --lg-danger: #f08a80;
     --lg-danger-solid: #a8231b;
@@ -473,12 +512,12 @@
   --lg-text-faint: #66665f;
 
   --lg-accent: #8fabff;
-  --lg-accent-solid: #2f5fe0;
-  --lg-accent-hover: #4370ea;
-  --lg-accent-active: #2450c4;
+  --lg-accent-solid: #eaeae5;
+  --lg-accent-hover: #d5d5d0;
+  --lg-accent-active: #c2c2bd;
   --lg-accent-subtle: rgba(143, 171, 255, 0.13);
   --lg-accent-rule: rgba(143, 171, 255, 0.36);
-  --lg-on-accent: #ffffff;
+  --lg-on-accent: #131312;
 
   --lg-satisfied: #3fcf95;
   --lg-satisfied-solid: #0f7a50;
@@ -486,11 +525,16 @@
   --lg-satisfied-rule: rgba(63, 207, 149, 0.32);
   --lg-on-satisfied: #ffffff;
 
-  --lg-unsatisfied: #eaeae5;
-  --lg-unsatisfied-solid: #eaeae5;
-  --lg-unsatisfied-subtle: rgba(234, 234, 229, 0.1);
-  --lg-unsatisfied-rule: rgba(234, 234, 229, 0.32);
-  --lg-on-unsatisfied: #131312;
+  --lg-unsatisfied: #f08a80;
+  --lg-unsatisfied-solid: #a8231b;
+  --lg-unsatisfied-subtle: rgba(240, 138, 128, 0.13);
+  --lg-unsatisfied-rule: rgba(240, 138, 128, 0.32);
+  --lg-on-unsatisfied: #ffffff;
+
+  /* Ink glyphs — the dark theme fills the box near-white. See the note in
+     the light block above. */
+  --lg-icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.4 6.3l2.3 2.3 4.9-5' fill='none' stroke='%23131312' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --lg-icon-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6h6' fill='none' stroke='%23131312' stroke-width='1.9' stroke-linecap='round'/%3E%3C/svg%3E");
 
   --lg-danger: #f08a80;
   --lg-danger-solid: #a8231b;

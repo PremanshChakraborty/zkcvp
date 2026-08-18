@@ -14,7 +14,7 @@ import { archiveRequirementAction } from "./actions";
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" tone="danger" loading={pending}>
+    <Button type="submit" tone="neutral" loading={pending}>
       Archive
     </Button>
   );
@@ -30,6 +30,11 @@ function SubmitButton() {
  * whole tab, and a modal for a single irreversible verb is more chrome than the
  * decision needs. The arming step is a plain state toggle, so nothing is sent
  * until the second, real submit.
+ *
+ * `neutral` rather than `danger`: red now carries the negative VERDICT, and an
+ * archive is not a failure — nothing has gone wrong when a stakeholder retires
+ * a requirement. The weight of the action is carried by the two steps above
+ * instead of by a hue that would read as an error beside a red chip.
  */
 export function ArchiveButton({
   requirementId,
@@ -40,7 +45,7 @@ export function ArchiveButton({
 
   if (!armed) {
     return (
-      <Button type="button" tone="danger" onClick={() => setArmed(true)}>
+      <Button type="button" tone="neutral" onClick={() => setArmed(true)}>
         Archive
       </Button>
     );

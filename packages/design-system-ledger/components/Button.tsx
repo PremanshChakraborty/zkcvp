@@ -4,7 +4,12 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cx } from "./cx";
 import { ICON_SM } from "./icons";
 
-export type ButtonTone = "primary" | "secondary" | "quiet" | "danger";
+export type ButtonTone =
+  | "primary"
+  | "secondary"
+  | "quiet"
+  | "neutral"
+  | "danger";
 export type ControlSize = "sm" | "md" | "lg";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

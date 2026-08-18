@@ -110,6 +110,20 @@
 }
 
 /* danger */
+/* Weighty without alarm. Archive is irreversible but it is not an error, and
+   red is now spoken for by the verdict family — so the seriousness is carried
+   by the confirmation step the control puts in front of itself, and by a fill
+   that is still a fill, rather than by a hue that says something broke. */
+.lg-btn--neutral {
+  background: var(--lg-neutral-solid);
+  border-color: var(--lg-neutral-solid);
+  color: #ffffff;
+}
+.lg-btn--neutral:hover:not(:disabled) {
+  background: var(--lg-text-secondary);
+  border-color: var(--lg-text-secondary);
+}
+
 .lg-btn--danger {
   background: var(--lg-danger-solid);
   border-color: var(--lg-danger-solid);
@@ -192,13 +206,15 @@
   color: var(--lg-satisfied);
 }
 
-/* Solid ink. The most emphatic chip in the system, and the reason the verdict
-   family needs no violet. See the note in tokens.css. */
+/* Built exactly like `satisfied`: a tinted outline, not a fill. The two
+   verdicts are opposites and should read as a matched pair rather than as a
+   quiet one and a shouting one. Weight is what now separates a verdict from a
+   failure — this chip against `danger`'s bordered alert panel — which is what
+   leaves solid ink free for the primary action. */
 .lg-chip--unsatisfied {
-  background: var(--lg-unsatisfied-solid);
-  border-color: var(--lg-unsatisfied-solid);
-  color: var(--lg-on-unsatisfied);
-  font-weight: var(--lg-weight-semibold);
+  background: var(--lg-unsatisfied-subtle);
+  border-color: var(--lg-unsatisfied-rule);
+  color: var(--lg-unsatisfied);
 }
 
 .lg-chip--danger {
