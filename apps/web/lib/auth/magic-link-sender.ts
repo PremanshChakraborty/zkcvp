@@ -51,13 +51,28 @@ export const smtpMagicLinkSender: MagicLinkSender = async ({ email, url }) => {
   });
 };
 
+/** Where a requested sign-in link actually goes. */
+export type MagicLinkDelivery = "email" | "console";
+
 /**
- * A function rather than a constant, matching env()'s own rationale — the
- * choice must be made when it is used, never at import or build time.
+ * The selection rule, in one place. The login confirmation renders its copy
+ * from this, so it must not drift from getMagicLinkSender below — a
+ * disagreement would tell a stakeholder their link was emailed when it went
+ * to the server log, or the reverse.
  *
  * SMTP_HOST alone selects. env() has already rejected a half-configured
  * mailbox by this point, so a set host means a complete one.
  */
+export function magicLinkDelivery(): MagicLinkDelivery {
+  return env().SMTP_HOST ? "email" : "console";
+}
+
+/**
+ * A function rather than a constant, matching env()'s own rationale — the
+ * choice must be made when it is used, never at import or build time.
+ */
 export function getMagicLinkSender(): MagicLinkSender {
-  return env().SMTP_HOST ? smtpMagicLinkSender : consoleMagicLinkSender;
+  return magicLinkDelivery() === "email"
+    ? smtpMagicLinkSender
+    : consoleMagicLinkSender;
 }

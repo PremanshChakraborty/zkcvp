@@ -22,10 +22,17 @@ export function EmailForm({ returnTo }: { returnTo: string }) {
   );
 
   if (state.status === "sent") {
-    return (
+    /* The copy follows the sender that actually ran. Claiming an inbox
+       delivery in development, where the link only reaches the server log,
+       would leave someone waiting for mail that is never sent. */
+    return state.delivery === "email" ? (
+      <Alert tone="success" title="Check your email">
+        A sign-in link is on its way to {state.email}. It expires in 24 hours.
+      </Alert>
+    ) : (
       <Alert tone="success" title="Link sent">
         A sign-in link for {state.email} was printed to the server console —
-        no email provider is configured yet. Copy the URL from there.
+        no email provider is configured. Copy the URL from there.
       </Alert>
     );
   }

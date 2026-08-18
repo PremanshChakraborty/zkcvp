@@ -11,6 +11,7 @@ import nodemailer from "nodemailer";
 import {
   consoleMagicLinkSender,
   getMagicLinkSender,
+  magicLinkDelivery,
   smtpMagicLinkSender,
 } from "../../lib/auth/magic-link-sender";
 import { resetEnvCache } from "../../lib/env";
@@ -78,6 +79,31 @@ describe("getMagicLinkSender", () => {
     expect(getMagicLinkSender()).toBe(consoleMagicLinkSender);
     resetEnvCache();
     configureMailbox();
+    expect(getMagicLinkSender()).toBe(smtpMagicLinkSender);
+  });
+});
+
+describe("magicLinkDelivery", () => {
+  it("reports console delivery when SMTP_HOST is absent", () => {
+    expect(magicLinkDelivery()).toBe("console");
+  });
+
+  it("reports email delivery when a mailbox is configured", () => {
+    configureMailbox();
+    expect(magicLinkDelivery()).toBe("email");
+  });
+
+  it("agrees with the sender actually selected", () => {
+    // The login confirmation copy is rendered from this value, so a
+    // disagreement here would tell a stakeholder their link was emailed when
+    // it went to the server log, or the reverse.
+    expect(magicLinkDelivery()).toBe("console");
+    expect(getMagicLinkSender()).toBe(consoleMagicLinkSender);
+
+    resetEnvCache();
+    configureMailbox();
+
+    expect(magicLinkDelivery()).toBe("email");
     expect(getMagicLinkSender()).toBe(smtpMagicLinkSender);
   });
 });

@@ -3,10 +3,14 @@
 
 import { stakeholderSignIn } from "../../../lib/auth/stakeholder";
 import { safeReturnPath } from "../../../lib/auth/return-path";
+import {
+  magicLinkDelivery,
+  type MagicLinkDelivery,
+} from "../../../lib/auth/magic-link-sender";
 
 export type RequestMagicLinkState =
   | { status: "idle" }
-  | { status: "sent"; email: string }
+  | { status: "sent"; email: string; delivery: MagicLinkDelivery }
   | { status: "error"; message: string };
 
 export async function requestMagicLink(
@@ -21,9 +25,10 @@ export async function requestMagicLink(
 
   try {
     /* redirect: false — this app has no separate "check your email" route;
-     * the confirmation renders inline on this same page (see page.tsx). The
-     * console sender is the only MagicLinkSender that ships, so "sent" here
-     * means "printed to the server console", not "delivered". */
+     * the confirmation renders inline on this same page (see page.tsx).
+     * What "sent" means depends on which MagicLinkSender is configured, so
+     * the delivery mode travels back with it rather than being assumed by
+     * the copy. */
     /* `redirectTo` becomes the callbackUrl embedded in the emailed link, so
      * this is the one place the return path leaves the app — sanitised once
      * more here, because a bound argument is still client-supplied input. */
@@ -32,7 +37,7 @@ export async function requestMagicLink(
       redirect: false,
       redirectTo: safeReturnPath(returnTo),
     });
-    return { status: "sent", email };
+    return { status: "sent", email, delivery: magicLinkDelivery() };
   } catch {
     return {
       status: "error",
