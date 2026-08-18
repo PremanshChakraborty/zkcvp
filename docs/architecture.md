@@ -54,9 +54,17 @@ type MagicLinkSender = (args: { email: string; url: string }) => Promise<void>;
 ```
 
 The stakeholder provider's `sendVerificationRequest` delegates to whichever sender `env.ts`
-selects. A console sender is the only implementation that ships. Adding Resend or SMTP later
-is one function and one env value — provider, adapter, token table, and tests stay untouched.
-The full stakeholder flow is demoable with zero external configuration.
+selects. Two senders ship: a console sender for development, and an SMTP sender selected by
+the presence of `SMTP_HOST`. Adding the second cost one function and five env values —
+provider, adapter, and token table were untouched, exactly as predicted. A domain-backed API
+sender (Resend and similar) is the same shape again, should deliverability from an ordinary
+mailbox stop being enough.
+
+With `SMTP_HOST` unset the console sender is selected, so the full stakeholder flow stays
+demoable with zero external configuration. `env.ts` validates the five SMTP values as a
+group: a half-configured mailbox fails at startup rather than degrading to console logging,
+which in production would post sign-in links to the server log while the deployment still
+looked healthy.
 
 ---
 
@@ -390,7 +398,11 @@ Display rules, all already encoded in the Ledger components:
 
 ## Host-agnostic guarantees
 
-The deployment host is undecided. These keep the decision cheap:
+The deployment host is Vercel as of 2026-08-18. The guarantees below were kept rather than
+spent: no `vercel.json`, no Vercel primitives, no edge runtime, and `output: 'standalone'`
+still emits a runnable Node server. Moving to a long-lived Node host stays a redeploy, not
+a rewrite — which matters most when the Evaluator lands, since a serverless request ceiling
+can truncate a run that a long-lived host would finish.
 
 | Concern | Commitment |
 |---|---|

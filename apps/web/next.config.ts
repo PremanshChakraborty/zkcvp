@@ -24,6 +24,12 @@ const nextConfig: NextConfig = {
     "@zkcvp/orchestrator",
   ],
 
+  /* nodemailer resolves its transports through dynamic requires, which the
+   * bundler cannot follow. Left bundled it builds but fails at send time.
+   * Server-only by construction — the magic-link sender never reaches a
+   * client component. */
+  serverExternalPackages: ["nodemailer"],
+
   /* The standalone tracer walks up to the workspace root to find hoisted deps.
    * fileURLToPath (not `.pathname`) is required here: on Windows, a file://
    * URL's `.pathname` keeps a leading slash before the drive letter

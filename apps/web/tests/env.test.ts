@@ -10,6 +10,11 @@ afterEach(() => {
   delete process.env.AUTH_SECRET;
   delete process.env.AUTH_GITHUB_ID;
   delete process.env.AUTH_GITHUB_SECRET;
+  delete process.env.SMTP_HOST;
+  delete process.env.SMTP_PORT;
+  delete process.env.SMTP_USER;
+  delete process.env.SMTP_PASSWORD;
+  delete process.env.EMAIL_FROM;
 });
 
 describe("env", () => {
@@ -52,5 +57,62 @@ describe("env", () => {
     resetEnvCache();
     process.env.DATABASE_URL = "postgresql://u:p@other:5432/db";
     expect(env().DATABASE_URL).toContain("other");
+  });
+
+  it("leaves SMTP settings undefined when unset", () => {
+    process.env.DATABASE_URL = VALID;
+    process.env.AUTH_SECRET = "test-secret";
+    expect(env().SMTP_HOST).toBeUndefined();
+    expect(env().SMTP_USER).toBeUndefined();
+    expect(env().SMTP_PASSWORD).toBeUndefined();
+    expect(env().EMAIL_FROM).toBeUndefined();
+  });
+
+  it("defaults SMTP_PORT to 587 when unset", () => {
+    process.env.DATABASE_URL = VALID;
+    process.env.AUTH_SECRET = "test-secret";
+    expect(env().SMTP_PORT).toBe(587);
+  });
+
+  it("parses a fully configured mailbox", () => {
+    process.env.DATABASE_URL = VALID;
+    process.env.AUTH_SECRET = "test-secret";
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_PORT = "465";
+    process.env.SMTP_USER = "postmaster@example.com";
+    process.env.SMTP_PASSWORD = "app-password";
+    process.env.EMAIL_FROM = "postmaster@example.com";
+    expect(env().SMTP_HOST).toBe("smtp.example.com");
+    expect(env().SMTP_PORT).toBe(465);
+    expect(env().EMAIL_FROM).toBe("postmaster@example.com");
+  });
+
+  it("rejects a half-configured mailbox rather than falling back silently", () => {
+    // A missing credential must not degrade to the console sender in
+    // production — sign-in links would go to the server log and stakeholders
+    // would see nothing arrive, while the deployment looks healthy.
+    process.env.DATABASE_URL = VALID;
+    process.env.AUTH_SECRET = "test-secret";
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "postmaster@example.com";
+    // SMTP_PASSWORD and EMAIL_FROM deliberately absent
+    expect(() => env()).toThrow(/SMTP_PASSWORD/);
+  });
+
+  it("names every missing SMTP field, not just the first", () => {
+    process.env.DATABASE_URL = VALID;
+    process.env.AUTH_SECRET = "test-secret";
+    process.env.SMTP_HOST = "smtp.example.com";
+    expect(() => env()).toThrow(/EMAIL_FROM/);
+  });
+
+  it("requires EMAIL_FROM to be an address", () => {
+    process.env.DATABASE_URL = VALID;
+    process.env.AUTH_SECRET = "test-secret";
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "postmaster@example.com";
+    process.env.SMTP_PASSWORD = "app-password";
+    process.env.EMAIL_FROM = "not-an-address";
+    expect(() => env()).toThrow(/EMAIL_FROM/);
   });
 });

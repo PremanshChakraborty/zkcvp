@@ -44,6 +44,31 @@ const schema = z.object({
    * Read here only so the value is validated and documented in one place;
    * Auth.js reads process.env.AUTH_URL itself. */
   AUTH_URL: z.string().url().optional(),
+
+  /* Magic-link delivery over SMTP. Optional as a group, following the
+   * AUTH_GITHUB_* treatment: absent credentials disable one delivery path
+   * rather than failing validation for everyone. SMTP_HOST alone selects the
+   * real sender (see lib/auth/magic-link-sender.ts); the group check below is
+   * what stops a half-configured mailbox from silently degrading to the
+   * console sender in production. */
+  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASSWORD: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().email().optional(),
+}).superRefine((value, ctx) => {
+  /* Only meaningful once a host is set — with SMTP_HOST absent the console
+   * sender is the intended configuration, not an incomplete one. */
+  if (!value.SMTP_HOST) return;
+  for (const key of ["SMTP_USER", "SMTP_PASSWORD", "EMAIL_FROM"] as const) {
+    if (!value[key]) {
+      ctx.addIssue({
+        code: "custom",
+        path: [key],
+        message: `${key} is required when SMTP_HOST is set`,
+      });
+    }
+  }
 });
 
 export type Env = z.infer<typeof schema>;
