@@ -2,6 +2,7 @@
 "use server";
 
 import { stakeholderSignIn } from "../../../lib/auth/stakeholder";
+import { safeReturnPath } from "../../../lib/auth/return-path";
 
 export type RequestMagicLinkState =
   | { status: "idle" }
@@ -9,6 +10,7 @@ export type RequestMagicLinkState =
   | { status: "error"; message: string };
 
 export async function requestMagicLink(
+  returnTo: string,
   _prevState: RequestMagicLinkState,
   formData: FormData,
 ): Promise<RequestMagicLinkState> {
@@ -22,7 +24,14 @@ export async function requestMagicLink(
      * the confirmation renders inline on this same page (see page.tsx). The
      * console sender is the only MagicLinkSender that ships, so "sent" here
      * means "printed to the server console", not "delivered". */
-    await stakeholderSignIn("email", { email, redirect: false });
+    /* `redirectTo` becomes the callbackUrl embedded in the emailed link, so
+     * this is the one place the return path leaves the app — sanitised once
+     * more here, because a bound argument is still client-supplied input. */
+    await stakeholderSignIn("email", {
+      email,
+      redirect: false,
+      redirectTo: safeReturnPath(returnTo),
+    });
     return { status: "sent", email };
   } catch {
     return {

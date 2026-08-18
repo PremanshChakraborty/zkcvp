@@ -8,8 +8,20 @@ import {
   PageHeader,
 } from "@zkcvp/design-system-ledger/components";
 import { developerSignIn } from "../../lib/auth/developer";
+import { safeReturnPath } from "../../lib/auth/return-path";
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string }>;
+}) {
+  /* Middleware writes `?from=` on every unauthenticated redirect. Until now
+   * nothing read it, so signing in always dropped the visitor at the default
+   * and a shared link to a requirement was effectively a link to the project
+   * list. Sanitised on the way in — see safeReturnPath. */
+  const { from } = await searchParams;
+  const returnTo = safeReturnPath(from);
+
   return (
     <main className="lg-container app-page app-page--narrow">
       <PageHeader
@@ -31,7 +43,7 @@ export default function LoginPage() {
               <form
                 action={async () => {
                   "use server";
-                  await developerSignIn("github");
+                  await developerSignIn("github", { redirectTo: returnTo });
                 }}
               >
                 <Button type="submit" tone="primary">
@@ -51,7 +63,11 @@ export default function LoginPage() {
                 required.
               </p>
               <div>
-                <Link href="/login/email">
+                {/* The return path rides along, or the stakeholder half of
+                    this screen forgets where they were headed. */}
+                <Link
+                  href={`/login/email?from=${encodeURIComponent(returnTo)}`}
+                >
                   <Button type="button">Continue with email</Button>
                 </Link>
               </div>

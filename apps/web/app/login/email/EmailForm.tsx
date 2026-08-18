@@ -12,9 +12,12 @@ import { requestMagicLink, type RequestMagicLinkState } from "./actions";
 
 const INITIAL_STATE: RequestMagicLinkState = { status: "idle" };
 
-export function EmailForm() {
+export function EmailForm({ returnTo }: { returnTo: string }) {
   const [state, formAction, pending] = useActionState(
-    requestMagicLink,
+    /* Bound rather than sent as a hidden field: the value ends up inside an
+       emailed link, so it should not be something the submitted form can
+       rewrite. The server sanitises it again regardless. */
+    requestMagicLink.bind(null, returnTo),
     INITIAL_STATE,
   );
 
