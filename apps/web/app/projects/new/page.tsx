@@ -1,5 +1,6 @@
 // apps/web/app/projects/new/page.tsx
 import {
+  Breadcrumb,
   Card,
   CardBody,
   CardHeader,
@@ -15,7 +16,16 @@ export default async function NewProjectPage() {
 
   return (
     <main className="lg-container app-page app-page--narrow">
-      <PageHeader title="New project" />
+      {/* The only way out of this form that is not the browser's back button.
+          `above` takes a Breadcrumb and nothing else — see PageHeaderProps. */}
+      <PageHeader
+        title="New project"
+        above={
+          <Breadcrumb
+            items={[{ label: "Projects", href: "/projects" }, { label: "New project" }]}
+          />
+        }
+      />
       <Card>
         <CardHeader title="Project details" />
         <CardBody>

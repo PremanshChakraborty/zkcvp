@@ -29,6 +29,13 @@ export function NewProjectForm() {
               name="name"
               required
               autoFocus
+              /* `key` forces the remount that re-seeds the control. React 19
+                 resets the form once the action resolves, so `defaultValue`
+                 alone would be read against an already-cleared input. */
+              key={state.status === "error" ? state.attempt : 0}
+              defaultValue={
+                state.status === "error" ? state.values.name : undefined
+              }
               aria-describedby={describedBy}
               invalid={invalid}
             />

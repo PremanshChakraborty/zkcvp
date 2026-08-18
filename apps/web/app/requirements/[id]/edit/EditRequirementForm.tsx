@@ -33,6 +33,14 @@ export function EditRequirementForm({
       ? state.message
       : undefined;
 
+  /* Same mechanism as the new-requirement form. It matters more here: these
+   * controls START pre-filled from the stored version, so a form reset after a
+   * rejected save wipes text the stakeholder never touched and reads as though
+   * the requirement itself had been emptied. */
+  const seedKey = state.status === "error" ? state.attempt : 0;
+  const seed =
+    state.status === "error" ? state.values : { title, description };
+
   return (
     <form action={formAction}>
       <div className="lg-stack">
@@ -56,7 +64,8 @@ export function EditRequirementForm({
               name="title"
               required
               autoFocus
-              defaultValue={title}
+              key={seedKey}
+              defaultValue={seed.title}
               aria-describedby={describedBy}
               invalid={invalid}
             />
@@ -75,7 +84,8 @@ export function EditRequirementForm({
               name="description"
               rows={6}
               required
-              defaultValue={description}
+              key={seedKey}
+              defaultValue={seed.description}
               aria-describedby={describedBy}
               invalid={invalid}
             />

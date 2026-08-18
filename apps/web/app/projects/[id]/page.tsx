@@ -1,6 +1,7 @@
 // apps/web/app/projects/[id]/page.tsx
 import Link from "next/link";
 import {
+  Breadcrumb,
   Button,
   ChecklistProgress,
   EmptyState,
@@ -57,6 +58,14 @@ export default async function ProjectPage({
     <main className="lg-container app-page">
       <PageHeader
         title={project.name}
+        above={
+          <Breadcrumb
+            items={[
+              { label: "Projects", href: "/projects" },
+              { label: project.name },
+            ]}
+          />
+        }
         lead={`Created ${dateFormat.format(project.createdAt)}`}
         actions={
           <>
@@ -119,6 +128,10 @@ export default async function ProjectPage({
                   <Link
                     href={`/requirements/${r.id}`}
                     aria-label={`View ${r.title}`}
+                    /* The row is not tappable, so this link is the whole
+                       target. app.css grows it to 44px under a coarse pointer
+                       and leaves the desktop row alone. */
+                    className="app-row-action"
                   >
                     View
                   </Link>

@@ -6,6 +6,7 @@ import { getDb } from "../../../../lib/db";
 import { requireStakeholder } from "../../../../lib/auth/session";
 import { inviteDeveloper } from "../../../../lib/projects/members";
 import { ServiceError } from "../../../../lib/api/errors";
+import { nextAttempt } from "../../../../lib/forms/attempt";
 
 /**
  * Four terminal states, not two, and the split is the point.
@@ -26,17 +27,31 @@ export type InviteState =
   | { status: "idle" }
   | { status: "added"; githubUsername: string }
   | { status: "invited"; githubUsername: string }
-  | { status: "unavailable"; message: string }
-  | { status: "error"; message: string };
+  /* The two failure branches carry `value` back so the form can re-seed the
+   * field. Both are recoverable — a typo to correct, or a GitHub outage to
+   * retry — and both used to clear what the stakeholder had typed, which turns
+   * "try that again" into "type all of that again". The success branches
+   * deliberately do not: there the field SHOULD empty, because the next thing
+   * anyone does with it is invite someone else. */
+  /* `attempt` — see lib/forms/attempt.ts — is what lets the field survive two
+   * consecutive rejections. */
+  | { status: "unavailable"; message: string; value: string; attempt: number }
+  | { status: "error"; message: string; value: string; attempt: number };
 
 export async function inviteDeveloperAction(
   projectId: string,
-  _prev: InviteState,
+  prev: InviteState,
   formData: FormData,
 ): Promise<InviteState> {
-  const githubUsername = String(formData.get("githubUsername") ?? "").trim();
+  const raw = String(formData.get("githubUsername") ?? "");
+  const githubUsername = raw.trim();
   if (!githubUsername) {
-    return { status: "error", message: "Enter a GitHub username." };
+    return {
+      status: "error",
+      message: "Enter a GitHub username.",
+      value: raw,
+      attempt: nextAttempt(prev),
+    };
   }
 
   /* No redirect() anywhere in this action: the outcome is a message on the same
@@ -61,9 +76,10 @@ export async function inviteDeveloperAction(
       : { status: "invited", githubUsername: result.invite.githubUsername };
   } catch (e) {
     if (e instanceof ServiceError) {
+      const attempt = nextAttempt(prev);
       return e.code === "github_unavailable"
-        ? { status: "unavailable", message: e.message }
-        : { status: "error", message: e.message };
+        ? { status: "unavailable", message: e.message, value: raw, attempt }
+        : { status: "error", message: e.message, value: raw, attempt };
     }
     /* SessionError (401/403 from requireStakeholder) and anything unexpected
      * are not this form's to describe — let the error boundary have them. */

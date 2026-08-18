@@ -1,6 +1,7 @@
 // apps/web/app/projects/[id]/members/page.tsx
 import {
   Badge,
+  Breadcrumb,
   Card,
   CardBody,
   CardHeader,
@@ -49,8 +50,20 @@ export default async function MembersPage({
 
   return (
     <main className="lg-container app-page">
+      {/* The title used to be `${project.name} — members`: a breadcrumb jammed
+          into an <h1> because there was no breadcrumb. The trail carries the
+          project now, so the heading can name only this page. */}
       <PageHeader
-        title={`${project.name} — members`}
+        title="Members"
+        above={
+          <Breadcrumb
+            items={[
+              { label: "Projects", href: "/projects" },
+              { label: project.name, href: `/projects/${id}` },
+              { label: "Members" },
+            ]}
+          />
+        }
         lead="Developers on this project, and anyone invited who has not signed in yet."
       />
 

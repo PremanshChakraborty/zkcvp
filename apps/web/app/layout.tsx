@@ -5,6 +5,7 @@ import "@zkcvp/design-system-ledger/styles/ledger.app.css";
 /* After the design system, so app-level layout classes can extend it. */
 import "./app.css";
 import { LedgerIcons } from "@zkcvp/design-system-ledger/components";
+import { AppHeader } from "./AppHeader";
 
 /* Self-hosted at build time by next/font. No network request at runtime, and no
  * render-blocking @import — which is why the app uses `ledger.app.css` rather
@@ -55,7 +56,11 @@ export default function RootLayout({
           } as React.CSSProperties
         }
       >
-        <LedgerIcons>{children}</LedgerIcons>
+        {/* Inside LedgerIcons: the header renders design-system glyphs too. */}
+        <LedgerIcons>
+          <AppHeader />
+          {children}
+        </LedgerIcons>
       </body>
     </html>
   );

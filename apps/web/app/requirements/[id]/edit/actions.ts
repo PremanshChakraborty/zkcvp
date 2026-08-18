@@ -6,32 +6,58 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "../../../../lib/db";
 import { requireStakeholder } from "../../../../lib/auth/session";
 import { editRequirement } from "../../../../lib/requirements/mutate";
+import { nextAttempt } from "../../../../lib/forms/attempt";
 
 /**
  * The same shape as the new-requirement action, including the field the message
  * belongs to: this form has two required controls, and a message rendered under
  * the wrong one tells the stakeholder to fix a field that is already correct.
  */
+export type RequirementValues = { title: string; description: string };
+
 export type FormState =
   | { status: "idle" }
-  | { status: "error"; field: "title" | "description"; message: string };
+  | {
+      status: "error";
+      field: "title" | "description";
+      message: string;
+      /* Carried back for the same reason as the new-requirement action, and it
+       * matters more here: the control started pre-filled from the stored
+       * version, so an empty field after a rejected save reads as though the
+       * requirement itself had been emptied. */
+      values: RequirementValues;
+      /* See lib/forms/attempt.ts. */
+      attempt: number;
+    };
 
 export async function editRequirementAction(
   requirementId: string,
-  _prev: FormState,
+  prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
+  const values: RequirementValues = {
+    title: String(formData.get("title") ?? ""),
+    description: String(formData.get("description") ?? ""),
+  };
+  const title = values.title.trim();
+  const description = values.description.trim();
 
   if (!title) {
-    return { status: "error", field: "title", message: "Enter a title." };
+    return {
+      status: "error",
+      field: "title",
+      message: "Enter a title.",
+      values,
+      attempt: nextAttempt(prev),
+    };
   }
   if (!description) {
     return {
       status: "error",
       field: "description",
       message: "Enter a description.",
+      values,
+      attempt: nextAttempt(prev),
     };
   }
 

@@ -2,10 +2,13 @@
 import Link from "next/link";
 import {
   Alert,
+  Breadcrumb,
   Button,
   Card,
   CardBody,
   CardHeader,
+  ICON_MD,
+  IconNew,
   PageHeader,
   Section,
   SectionHeading,
@@ -16,6 +19,7 @@ import {
 } from "@zkcvp/design-system-ledger/components";
 import { getDb } from "../../../lib/db";
 import { requireSession } from "../../../lib/auth/session";
+import { getProject } from "../../../lib/projects/service";
 import { getRequirement } from "../../../lib/requirements/service";
 import { ArchiveButton } from "./ArchiveButton";
 
@@ -38,11 +42,15 @@ export default async function RequirementPage({
    * requirement's project. Only the two mutating affordances below are
    * stakeholder-only. */
   const session = await requireSession();
-  const { requirement, versionHistory } = await getRequirement(
-    getDb(),
-    session,
-    id,
-  );
+  const db = getDb();
+  const { requirement, versionHistory } = await getRequirement(db, session, id);
+
+  /* Only for the trail. `getRequirement` already proved membership of this
+   * project, so this cannot widen what the visitor can reach — it re-reads a row
+   * they have just been authorised against, to put a name on it. A requirement
+   * reached from a link used to be a dead end that never said which checklist
+   * it belonged to. */
+  const project = await getProject(db, session, requirement.projectId);
 
   const archived = requirement.archivedAt !== null;
   const isStakeholder = session.kind === "stakeholder";
@@ -60,6 +68,18 @@ export default async function RequirementPage({
           ) : (
             requirement.title
           )
+        }
+        above={
+          <Breadcrumb
+            items={[
+              { label: "Projects", href: "/projects" },
+              {
+                label: project.name,
+                href: `/projects/${requirement.projectId}`,
+              },
+              { label: requirement.title },
+            ]}
+          />
         }
         lead={`Created ${dateTimeFormat.format(requirement.createdAt)}`}
         actions={
@@ -128,38 +148,73 @@ export default async function RequirementPage({
           </CardBody>
         </Card>
 
-        <Section>
-          <SectionHeading>Version history</SectionHeading>
-          {/* Versions are immutable: an edit writes a new one and never alters
-              an old one, so this list is an audit trail and is shown in full,
-              in version order, exactly as the service returns it. */}
-          <Timeline label="Version history">
-            {versionHistory.map((v) => (
-              <TimelineItem
-                key={v.id}
-                title={
-                  <>
-                    <VersionPill
-                      version={v.versionNumber}
-                      current={v.id === requirement.currentVersionId}
-                    />{" "}
-                    {v.title}
-                  </>
-                }
-                meta={dateTimeFormat.format(v.createdAt)}
-              >
-                {/* The chip is wrapped: a bare chip in the timeline's flex
-                    column would be stretched to the column's full width. */}
-                <span className="lg-row-flex">
-                  {/* The raw enum never reaches the screen — StatusBadge owns
-                      the label, and `eval_failed` reads "Not satisfied". */}
-                  <StatusBadge status={v.status} />
-                </span>
-                <p className="lg-body">{v.description}</p>
-              </TimelineItem>
-            ))}
-          </Timeline>
-        </Section>
+        {/* Only once there is a history to show. At v1 the single entry
+            repeats the card above it line for line — same title, same
+            description, same status, same date — and a "Version history"
+            heading over one duplicated row states a fact the reader can
+            already see. Every requirement on a new checklist is at v1, so this
+            is the common case, not the edge one. Nothing is lost: the card
+            carries the version pill, the status and the text, and the header
+            carries the title and the creation date. */}
+        {versionHistory.length > 1 ? (
+          <Section>
+            <SectionHeading>Version history</SectionHeading>
+            {/* Versions are immutable: an edit writes a new one and never alters
+                an old one, so this list is an audit trail and is shown in full,
+                in version order, exactly as the service returns it. The current
+                version is included: seeing the trail end where the card begins is
+                what confirms the card is the latest. */}
+            <Timeline label="Version history">
+              {versionHistory.map((v) => (
+                <TimelineItem
+                  key={v.id}
+                  /* Every item in the system's own gallery carries a marker, and
+                   * the connecting rule is drawn down the marker column — without
+                   * one the rule ran between two invisible nodes and the entries
+                   * sat behind an empty gutter. Deliberately the same neutral
+                   * glyph on every row: the StatusBadge below already says what
+                   * this version reached, and a second status-coded mark would
+                   * encode it twice. */
+                  marker={<IconNew size={ICON_MD} />}
+                  title={
+                    <>
+                      <VersionPill
+                        version={v.versionNumber}
+                        current={v.id === requirement.currentVersionId}
+                      />{" "}
+                      {v.title}
+                    </>
+                  }
+                  /* Not TimelineItem's `at` prop, which formats in the reader's
+                   * locale: this page pins en-GB, and two date formats on one
+                   * screen is worse than a hand-built stamp. `<time>` is here so
+                   * the value stays machine-readable anyway. */
+                  meta={
+                    <time dateTime={v.createdAt.toISOString()}>
+                      {dateTimeFormat.format(v.createdAt)}
+                    </time>
+                  }
+                >
+                  {/* The chip is wrapped: a bare chip in the timeline's flex
+                      column would be stretched to the column's full width. */}
+                  <span className="lg-row-flex">
+                    {/* The raw enum never reaches the screen — StatusBadge owns
+                        the label, and `eval_failed` reads "Not satisfied". */}
+                    <StatusBadge status={v.status} />
+                  </span>
+                  {/* `lg-prose`, matching the card above. base.css scopes that
+                      class to "evaluator rationales and requirement
+                      descriptions", which is exactly this — and `lg-body` had it
+                      set brighter and to the full container width, so a
+                      superseded version read as more prominent than the current
+                      one and the same sentence took two different measures 150px
+                      apart. */}
+                  <p className="lg-prose">{v.description}</p>
+                </TimelineItem>
+              ))}
+            </Timeline>
+          </Section>
+        ) : null}
       </div>
     </main>
   );

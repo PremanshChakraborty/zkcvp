@@ -71,15 +71,34 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* The title, its lead and its actions become three siblings of the header
+     itself, so they can be ordered independently.
+
+     Stacking `__main` as a column was the obvious move and put the buttons
+     between the title and the lead that describes it — the one pairing on the
+     header that must not be broken, since the lead is a sentence ABOUT the
+     title. `display: contents` on a plain <div> carries no semantics to lose,
+     and promoting its children is the only way to interleave them with a lead
+     that is `__main`'s sibling rather than its child. */
   .lg-page-header__main {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: var(--lg-space-3);
+    display: contents;
   }
 
   .lg-page-header__title {
+    order: 1;
     font-size: var(--lg-text-600);
     line-height: var(--lg-text-600-lh);
+  }
+
+  .lg-page-header__lead {
+    order: 2;
+  }
+
+  /* Last, and pushed off the lead: the header's own `gap` is tighter than the
+     separation a row of controls wants under a paragraph. */
+  .lg-page-header__actions {
+    order: 3;
+    margin-top: var(--lg-space-2);
   }
 
   .lg-display,

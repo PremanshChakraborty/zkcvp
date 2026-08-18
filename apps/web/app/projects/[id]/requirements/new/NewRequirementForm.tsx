@@ -23,6 +23,13 @@ export function NewRequirementForm({ projectId }: { projectId: string }) {
       ? state.message
       : undefined;
 
+  /* React 19 resets an uncontrolled form once its action resolves, which is
+   * right after a successful submit and wrong after a rejected one. Keying on
+   * the attempt count remounts both controls with what was actually typed —
+   * without it, a blank title cost the stakeholder their whole description. */
+  const seedKey = state.status === "error" ? state.attempt : 0;
+  const seed = state.status === "error" ? state.values : undefined;
+
   return (
     <form action={formAction}>
       {/* The two fields and the submit button are separate blocks; without a
@@ -35,6 +42,8 @@ export function NewRequirementForm({ projectId }: { projectId: string }) {
               name="title"
               required
               autoFocus
+              key={seedKey}
+              defaultValue={seed?.title}
               aria-describedby={describedBy}
               invalid={invalid}
             />
@@ -53,6 +62,8 @@ export function NewRequirementForm({ projectId }: { projectId: string }) {
               name="description"
               rows={6}
               required
+              key={seedKey}
+              defaultValue={seed?.description}
               aria-describedby={describedBy}
               invalid={invalid}
             />

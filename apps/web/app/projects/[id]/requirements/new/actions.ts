@@ -6,32 +6,59 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "../../../../../lib/db";
 import { requireStakeholder } from "../../../../../lib/auth/session";
 import { createRequirement } from "../../../../../lib/requirements/service";
+import { nextAttempt } from "../../../../../lib/forms/attempt";
 
 /**
  * Same shape as the new-project action, plus the field the message belongs to.
  * This form has two required controls, and a message rendered under the wrong
  * one tells the stakeholder to fix a field that is already correct.
  */
+export type RequirementValues = { title: string; description: string };
+
 export type FormState =
   | { status: "idle" }
-  | { status: "error"; field: "title" | "description"; message: string };
+  | {
+      status: "error";
+      field: "title" | "description";
+      message: string;
+      /* Both fields ride back, not just the offending one. A Server Action
+       * re-renders the form from scratch, and losing a paragraph of description
+       * because the title was blank is the worst version of this bug. */
+      values: RequirementValues;
+      /* See lib/forms/attempt.ts — this is what makes the re-seed survive two
+       * rejections in a row. */
+      attempt: number;
+    };
 
 export async function createRequirementAction(
   projectId: string,
-  _prev: FormState,
+  prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
+  /* Raw for the round trip, trimmed for the checks and the write. */
+  const values: RequirementValues = {
+    title: String(formData.get("title") ?? ""),
+    description: String(formData.get("description") ?? ""),
+  };
+  const title = values.title.trim();
+  const description = values.description.trim();
 
   if (!title) {
-    return { status: "error", field: "title", message: "Enter a title." };
+    return {
+      status: "error",
+      field: "title",
+      message: "Enter a title.",
+      values,
+      attempt: nextAttempt(prev),
+    };
   }
   if (!description) {
     return {
       status: "error",
       field: "description",
       message: "Enter a description.",
+      values,
+      attempt: nextAttempt(prev),
     };
   }
 
