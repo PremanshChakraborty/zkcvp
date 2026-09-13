@@ -10,17 +10,13 @@ export default defineConfig({
      * @zkcvp/design-system-ledger`) which server-renders real markup. It is not
      * a Vitest suite and is not collected here.
      *
-     * packages/orchestrator/tests/integration.test.ts is a MANUAL script, not a
-     * suite — its own header says to run it with
-     * `GITHUB_TOKEN=... GOOGLE_API_KEY=... npx tsx`. It hits a live repo and a
-     * live LLM, so collecting it here would make the suite fail for anyone
-     * without both credentials. Run it by hand when you want it. */
-    exclude: [
-      "**/node_modules/**",
-      "**/.next/**",
-      "**/dist/**",
-      "packages/orchestrator/tests/**",
-    ],
+     * The orchestrator's live end-to-end check is
+     * packages/orchestrator/tests/integration-manual.ts — named so it falls
+     * outside the `*.test.ts` include rather than needing an exclude entry,
+     * because a blanket exclude on that directory also hid the real unit tests
+     * beside it. It hits a live repo and a live LLM; run it by hand with
+     * `GITHUB_TOKEN=... GOOGLE_API_KEY=... npx tsx`. */
+    exclude: ["**/node_modules/**", "**/.next/**", "**/dist/**"],
 
     /* Drops each test file's database schema and closes its pool when the file
      * finishes. Required, not bookkeeping: the harness holds a pg.Pool in module
@@ -28,14 +24,44 @@ export default defineConfig({
      * Vitest hangs at exit. Harmless for the files that never touch a database. */
     setupFiles: ["./packages/db/tests/setup.ts"],
 
+    /* The FIRST test in a database file pays a one-time cost the others do not,
+     * and it is paid inside that test's timeout.
+     *
+     * `withTestSchema` builds the file's schema lazily on first call — sweep
+     * stale schemas, CREATE SCHEMA, run every migration as one query, read back
+     * the table list. Measured against this hosted database while idle: 4796ms
+     * for that first call, 236ms for each one after it. Vitest's default
+     * timeout is 5000ms, so on a quiet machine the first test cleared it by
+     * about two hundred milliseconds, and under the contention of thirteen
+     * database files starting at once it did not — which surfaced as a handful
+     * of scattered 5010ms failures in whichever files lost the race, never the
+     * same ones twice.
+     *
+     * That reads exactly like the connection exhaustion documented below, and
+     * it is not: there were no pooler errors, and the failing assertions were
+     * always the first in their file. The lazy build is deliberate (files that
+     * never touch the database must not pay for a schema), so the cost has to
+     * live inside a test — which means the budget has to accommodate it.
+     *
+     * Raise this if migrations keep accumulating; the one-time cost grows with
+     * them. It is not a licence for slow tests: everything after the first call
+     * in a file runs in a quarter of a second. */
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
+
     /* File parallelism is deliberately UNCAPPED, and that is only safe because
      * of how packages/db/tests/harness.ts is written. Read this before adding a
      * cap back.
      *
      * The harness builds one schema per test FILE and separates the tests inside
-     * it with TRUNCATE. So the database cost is one small pool (max 2) per
-     * in-flight file — roughly 18 connections across the 9 files that touch the
+     * it with TRUNCATE. So the database cost is one single-connection pool per
+     * in-flight file — 13 connections across the 13 files that touch the
      * database — and it is flat: it does not grow with the test count.
+     *
+     * It does grow with the FILE count, which is the one thing to watch. This
+     * database allows 60 connections, 3 reserved, and Supabase's own services
+     * hold about 13 permanently. See the note on `max` in
+     * packages/db/tests/harness.ts.
      *
      * It used to. An earlier harness created a fresh schema per TEST, which gave
      * every connection a distinct `search_path` startup parameter. Supavisor
