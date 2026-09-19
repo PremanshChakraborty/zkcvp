@@ -67,6 +67,44 @@ function tagsWithRole(role: string): string[] {
 const chipText = textOf("lg-chip").join(" | ");
 const progressTags = tagsWithRole("progressbar");
 
+/**
+ * Outer HTML of the first element carrying the EXACT class `cls` (no other
+ * tokens), depth-matched on its own tag name.
+ *
+ * `textOf`'s non-greedy backreference match is fine for flat content like a
+ * chip's text, but `.lg-eval` nests other `div`s (`.lg-eval__head`, and the
+ * `Alert`'s own `.lg-alert`), so the first `</div>` it would find belongs to
+ * a child, not the root. This walks tag depth instead, so a check against the
+ * evaluation checklist's markup cannot pick up an unrelated `%` or string
+ * from a sibling gallery section, and cannot be fooled by its own children.
+ */
+function htmlOfExact(cls: string): string {
+  const marker = `class="${cls}"`;
+  const markerIdx = doc.indexOf(marker);
+  if (markerIdx === -1) return "";
+  const tagStart = doc.lastIndexOf("<", markerIdx);
+  const tagName = doc.slice(tagStart).match(/^<(\w+)/)?.[1] ?? "div";
+  const openTag = `<${tagName}`;
+  const closeTag = `</${tagName}>`;
+  let depth = 0;
+  let i = tagStart;
+  for (;;) {
+    const nextOpen = doc.indexOf(openTag, i);
+    const nextClose = doc.indexOf(closeTag, i);
+    if (nextClose === -1) return doc.slice(tagStart);
+    if (nextOpen !== -1 && nextOpen < nextClose) {
+      depth++;
+      i = nextOpen + openTag.length;
+    } else {
+      depth--;
+      i = nextClose + closeTag.length;
+      if (depth === 0) return doc.slice(tagStart, i);
+    }
+  }
+}
+
+const evalHtml = htmlOfExact("lg-eval");
+
 const checks: Array<[string, boolean]> = [
   // eval_failed is a negative verdict, not a malfunction.
   ["status chips say 'Not satisfied'", chipText.includes("Not satisfied")],
@@ -105,6 +143,19 @@ const checks: Array<[string, boolean]> = [
   // Identity is never coloured.
   ["role chips carry no verdict tone", !/lg-chip--role[^"]*(satisfied|danger|warning)/.test(doc)],
 
+  /* The disclosure's accessibility is entirely the element's: a hand-rolled
+     button-and-div loses the expanded announcement, the keyboard handling and
+     the browser's find-in-page expansion, and re-earns them badly. Asserting
+     the tag names is the only way to stop that substitution landing silently.
+     The second check is its corollary: `<summary>` already announces its own
+     state, so an `aria-expanded` added here would have it said twice. */
+  ["disclosure is built on native details/summary", doc.includes('<details class="lg-disclosure__detail"') && doc.includes('<summary class="lg-disclosure__summary"')],
+  /* A `lead` control must land outside the summary. Inside one the browser
+     fires both controls from a single click, so selecting an entry silently
+     expands it too, and the checkbox is announced as nested in a button. */
+  ["disclosure lead renders outside the summary", !/<summary[^>]*>[\s\S]{0,400}?lg-check__box[\s\S]*?<\/summary>/.test(doc)],
+  ["disclosure summary does not re-announce its own state", !/<summary[^>]*aria-expanded/.test(doc)],
+
   // Icons come from one family, and they render.
   ["phosphor icons render as svg", (doc.match(/<svg/g) || []).length > 40],
 
@@ -114,6 +165,29 @@ const checks: Array<[string, boolean]> = [
   // Accessibility floors that are easy to regress.
   ["every icon-only button has an accessible name", !/<button(?![^>]*aria-label)[^>]*lg-icon-btn/.test(doc)],
   ["tab strip uses the ARIA tabs pattern", doc.includes('role="tablist"') && doc.includes('aria-selected')],
+  /* And the section strip does NOT. Its items are links to other URLs: they do
+     not answer arrow keys and they are not panels, so `aria-selected` on one
+     would promise a keyboard contract the strip cannot keep. The two share a
+     look and nothing else. */
+  ["section strip marks its current page with aria-current", /<nav[^>]*class="lg-tabs"[\s\S]*?aria-current="page"/.test(doc)],
+  ["section strip is not a tablist", !/<nav[^>]*class="lg-tabs"[^>]*role="tablist"/.test(doc)],
+
+  /* The evaluation checklist exists to say "no fraction" out loud rather than
+     draw one. A `%` anywhere in this markup would be exactly the fabricated
+     precision the component is built to refuse, so the guard is mechanical
+     rather than a review note. The round-2 case is the one whose display rule
+     is non-obvious: `gather`/`analyze` repeat, so the gallery's mid-run
+     specimen pins `phase="gather"`, `round={2}`. */
+  ["evaluation checklist shows the round indicator from round 2 onward", evalHtml.includes("round 2")],
+  ["evaluation checklist never renders a percentage", evalHtml.length > 0 && !evalHtml.includes("%")],
+  // The ceiling is read from `ceilingSeconds`, never hardcoded — including in the copy.
+  ["evaluation ceiling copy reflects ceilingSeconds, not a hardcoded default", evalHtml.includes("1:00") && !evalHtml.includes("5:00")],
+  /* `eval_failed` is an enum name, not a word any surface may show a person.
+     Scoped to the checklist's own markup, like the chip check above: other
+     specimens on this page (Domain, Foundations) discuss the enum in prose on
+     purpose, and a whole-document search would report that documentation as
+     a leak. */
+  ["'eval_failed' never leaks into the evaluation checklist", !evalHtml.includes("eval_failed")],
 ];
 
 console.log("");
