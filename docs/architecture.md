@@ -15,8 +15,7 @@ document and those disagree about a rule, they win.
 | Magic-link delivery | Console transport behind a `MagicLinkSender` seam. No external provider |
 | Tests | Vitest, integration-first against real Postgres |
 
-Still deliberately open: the deployment host, the Transparency Log backend, claim-submission
-request/response shape, evidence disclosure.
+Still deliberately open: the Transparency Log backend, evidence disclosure.
 
 ### Why Next 15, pinned exact
 
@@ -28,7 +27,7 @@ compatibility risk at zero cost — nothing in the host-agnostic design needs a 
 ### Why Drizzle, and why Supabase is only Postgres
 
 Drizzle emits readable `.sql` migrations and ships no query-engine binary, keeping cold starts
-low if a serverless host is chosen. Supabase supplies the Postgres instance and nothing else:
+low on Vercel's serverless functions. Supabase supplies the Postgres instance and nothing else:
 no `supabase-js`, no Row Level Security, no Supabase Auth. Authorization lives in the app layer
 where plan 01's matrix is written. Moving to Neon, Railway, or local Postgres is a
 connection-string change.
@@ -115,6 +114,12 @@ seven stakeholder-facing screens — `/projects`, `/projects/new`, `/projects/[i
 `/projects/[id]/requirements/new`, `/requirements/[id]`, `/requirements/[id]/edit`, and
 `/projects/[id]/members` — are wired against the real Postgres schema and integration-tested.
 
+Plan 02's repo attachment has since landed on the same foundation: six more endpoints under
+`/api/projects/:projectId/repos`, reusing the same `ServiceError` → JSON shape rather than
+inventing one, and an eighth screen, `/projects/[id]/repos`. Plan 03's claim submission (M6
+below) adds two more of each: eighteen endpoints and ten screens are wired and
+integration-tested in total.
+
 Known limitation, deliberately unaddressed in M4: nothing in `apps/web` catches a
 `SessionError` or a `ServiceError` thrown from a Server Component, and there is no
 `error.tsx` or `global-error.tsx` anywhere in `apps/web`. Middleware only checks cookie
@@ -127,7 +132,8 @@ reachable case needs no role confusion at all: any member opening
 `/requirements/<stale-or-mistyped-id>` gets `ServiceError(404)` from `loadRequirement` and
 the same generic framework error page. The project owner decided not to address this in M4.
 
-Next: **M5 — Remaining checklist screens.**
+Next: **the Transparency Log** — the only piece of `docs/plans/03-claim-submission.md` not
+yet built.
 
 ---
 
@@ -300,7 +306,12 @@ path and the Server Component path from diverging — they are the same function
 this*. `requireProjectMember`/`requireStakeholderMember` in `session.ts` are page-level
 conveniences over the same predicates, so each rule still has exactly one implementation.
 
-Uniform error body across all ten endpoints — plan 01 fixes the status codes but not the shape:
+Uniform error body across all eighteen endpoints — plan 01 fixes the status codes and shape for
+its ten, and plan 02's six repo endpoints plus plan 03's two claim endpoints reuse the same
+`ServiceError` rather than defining their own. The one exception is
+`POST /api/projects/:projectId/claims`: once its response has started streaming, a failure
+cannot carry a status line, so it arrives instead as a terminal `failed` frame in the body
+(see M6) rather than this JSON shape:
 
 ```json
 { "error": { "code": "conflict", "message": "Already a member of this project" } }
@@ -346,11 +357,12 @@ Ledger ships no modal and no pagination, so create and edit are routed pages wit
 |---|---|
 | `/projects` | project list, `EmptyState` when none |
 | `/projects/new` | name field |
-| `/projects/[id]` | checklist, `ChecklistProgress`, a link to `/projects/[id]/members` |
+| `/projects/[id]` | checklist, `ChecklistProgress`, links to `/projects/[id]/members` and `/projects/[id]/repos` |
 | `/projects/[id]/requirements/new` | title + description |
 | `/requirements/[id]` | detail plus version history as a `Timeline` |
 | `/requirements/[id]/edit` | prefilled title + description |
 | `/projects/[id]/members` | members, pending invites, stakeholder-only invite form |
+| `/projects/[id]/repos` | attached repos, developer-only attach form with 60-second undo |
 
 `/projects` and `/projects/[id]` are built role-aware in one pass — stakeholders get the
 create/edit/archive actions, developer members get the same data read-only. Same query, one
@@ -374,11 +386,12 @@ same pattern). This table is kept as the role-split reference, not a list of pen
 |---|---|---|
 | `/projects` | both | project list |
 | `/projects/new` | stakeholder | |
-| `/projects/[id]` | both | checklist, `ChecklistProgress`, a link to `/projects/[id]/members` |
+| `/projects/[id]` | both | checklist, `ChecklistProgress`, links to `/projects/[id]/members` and `/projects/[id]/repos` |
 | `/projects/[id]/requirements/new` | stakeholder | routed page, not a dialog |
 | `/requirements/[id]` | both | detail plus version history as a `Timeline` |
 | `/requirements/[id]/edit` | stakeholder | routed page, not a dialog |
 | `/projects/[id]/members` | both | list; invite form is stakeholder-only |
+| `/projects/[id]/repos` | both | list; attach form and undo are developer-only |
 
 Ledger ships no modal and no pagination — deliberately absent until a real caller shapes their
 API. Create and edit are routed pages with inline forms. If a dialog proves necessary it is
@@ -396,13 +409,39 @@ Display rules, all already encoded in the Ledger components:
 
 ---
 
+## M6 — Repo attachment and claim submission
+
+Plan 02 and plan 03 land together, completing the web app short of the Transparency Log.
+
+Repo attachment: six endpoints under `/api/projects/:projectId/repos`, `packages/github`
+gains `listUserRepos`, `listBranches`, and `listCommits`, and `/projects/[id]/repos` lets a
+developer attach a repo picked from what their own GitHub account can already see, with a
+60-second undo.
+
+Claim submission: five tables — `claims`, `claim_repos`, `claim_requirement_versions`,
+`evaluations`, `verdicts`. `POST /api/projects/:projectId/claims` validates the request,
+opens a transaction writing `claims` + `claim_repos` + `claim_requirement_versions`, then
+streams newline-delimited JSON: progress frames from `evaluateStream()`, followed by exactly
+one terminal frame, `done` or `failed`. A `done` frame is written only once a second
+transaction has recorded `evaluations`, `verdicts`, and the `requirement_versions.status`
+write-back together; a thrown evaluation writes none of the three, so a failure never leaves
+a status behind. `GET /api/claims/:id` returns a claim, its pinned commits, and its
+verdicts — never the evidence bundle, which is stored and hashed (`evidence_hash`, a
+SHA-256 over canonical JSON) but returned by nothing.
+
+Screens: `/projects/[id]/claims/new` composes a claim and watches it run; `/claims/[id]`
+shows verdicts, pinned commits, and a withheld-evidence affordance; `/requirements/[id]`
+folds the latest verdict into its Timeline.
+
+---
+
 ## Host-agnostic guarantees
 
 The deployment host is Vercel as of 2026-08-18. The guarantees below were kept rather than
 spent: no `vercel.json`, no Vercel primitives, no edge runtime, and `output: 'standalone'`
 still emits a runnable Node server. Moving to a long-lived Node host stays a redeploy, not
-a rewrite — which matters most when the Evaluator lands, since a serverless request ceiling
-can truncate a run that a long-lived host would finish.
+a rewrite — which matters because Vercel's function limit is 60 seconds on the current plan
+and can truncate a run that a long-lived host would finish.
 
 | Concern | Commitment |
 |---|---|
@@ -413,7 +452,7 @@ can truncate a run that a long-lived host would finish.
 | Vercel primitives | None. No `waitUntil`, no `@vercel/blob`, no `vercel.json` crons |
 | Middleware | Unauthenticated redirects only |
 | Evaluator | A plain `async` function behind the `Evaluator` interface; the route handler is a thin adapter |
-| Execution ceiling | `EVAL_CEILING_SECONDS`, read at runtime. Feeds `EvaluationProgress`'s `ceilingSeconds` |
+| Execution ceiling | `EVAL_CEILING_SECONDS`, read at runtime. 60 on Vercel (its function limit on the current plan); default 300 otherwise. Feeds `EvaluationProgress`'s `ceilingSeconds` |
 
 Accepted consequence: Vercel Cron and edge-middleware performance are unavailable. Neither is
 needed.
@@ -423,8 +462,14 @@ needed.
 ## Testing
 
 Vitest, integration-first, against real Postgres (`packages/db/tests/harness.ts`). Handlers are
-written after their tests. `packages/orchestrator/tests/**` is excluded — a manual script
-needing live GitHub and LLM credentials, not a collectable test file.
+written after their tests.
+
+The orchestrator's live end-to-end check is `packages/orchestrator/tests/integration-manual.ts`,
+which hits a real repo and a real model. It is kept outside the `*.test.ts` include by its name
+rather than by an exclude rule: the directory-wide exclude it used to need also hid the pure
+unit tests beside it (the code guardrail, the model-output validators, the retry policy), none
+of which touch a network or a database. Run it by hand with
+`GITHUB_TOKEN=... GOOGLE_API_KEY=... npx tsx`.
 
 ### The harness, and what not to undo
 
@@ -484,8 +529,5 @@ is where the `eval_failed` display rule is actually enforced.
 
 ## Out of scope
 
-Repo attachment (`docs/plans/02`), claim submission, the Evaluator's internals, the
-Transparency Log, stakeholder-invite endpoint or UI, un-archiving, evidence disclosure.
-
-No surface may present real verdict output as if produced by the Evaluator — it does not exist
-yet.
+The Transparency Log, stakeholder-invite endpoint or UI, un-archiving, evidence disclosure.
+The Evaluator itself — see `docs/orchestrator.md`.
