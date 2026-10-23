@@ -3,6 +3,7 @@ import type {
   EvidenceBundle,
   RepoCommit,
   Report,
+  RunTrace,
   ToolCall,
   Tree,
   Verdict,
@@ -28,9 +29,14 @@ import type {
 export type PlannedFile = {
   repo: string;
   path: string;
+  /**
+   * Character offset to read from. Absent for a first read; set only by
+   * ANALYZE asking to continue a file GATHER truncated.
+   */
+  offset?: number;
 };
 
-/** A file the gatherer attempted, and how that attempt ended. */
+/** A file — or one window of a long file — the gatherer attempted. */
 export type GatheredFile = {
   repo: string;
   path: string;
@@ -38,6 +44,10 @@ export type GatheredFile = {
   content: string;
   /** `ok` and `truncated` carry code; `not_found` is evidence of absence. */
   status: "ok" | "truncated" | "not_found" | "too_large";
+  /** Where this window starts in the file. 0 for a first read. */
+  offset: number;
+  /** The whole file's length, so the model knows how much it has not seen. */
+  totalChars?: number;
 };
 
 export type RequirementInput = {
@@ -55,6 +65,15 @@ export type VerdictEntry = {
 /** `repo:path` — unique across repos, unlike a bare path. */
 export function fileKey(file: { repo: string; path: string }): string {
   return `${file.repo}:${file.path}`;
+}
+
+/**
+ * `repo:path` for a first read, `repo:path#offset` for a later window — so a
+ * continuation is a new entry in `gatheredFiles` rather than overwriting the
+ * window the model has already seen.
+ */
+export function windowKey(file: { repo: string; path: string; offset?: number }): string {
+  return file.offset ? `${fileKey(file)}#${file.offset}` : fileKey(file);
 }
 
 /** Later verdicts win per requirement; untouched requirements survive. */
@@ -128,6 +147,25 @@ export const EvaluatorAnnotation = Annotation.Root({
   iterationCount: Annotation<number>({
     reducer: (_a, b) => b,
     default: () => 0,
+  }),
+  /** Why ANALYZE let the loop end. Set on the round that ends it. */
+  stopReason: Annotation<RunTrace["stopReason"] | null>({
+    reducer: (_a, b) => b,
+    default: () => null,
+  }),
+
+  // ── Trace, appended by each node; assembled into the evidence by FORMAT ──
+  traceNodes: Annotation<RunTrace["nodes"]>({
+    reducer: (a, b) => [...a, ...b],
+    default: () => [],
+  }),
+  traceModelCalls: Annotation<RunTrace["modelCalls"]>({
+    reducer: (a, b) => [...a, ...b],
+    default: () => [],
+  }),
+  filesReadPerRound: Annotation<string[][]>({
+    reducer: (a, b) => [...a, ...b],
+    default: () => [],
   }),
 
   // ── Terminal, written only by FORMAT ──
